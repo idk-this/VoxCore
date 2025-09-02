@@ -20,6 +20,5 @@ private:
     vk::ApplicationInfo m_appInfo;
     vk::Instance m_instance;
     const std::vector<const char*> m_enabledLayers = {
-        "VK_LAYER_KHRONOS_validation"
     };
 };

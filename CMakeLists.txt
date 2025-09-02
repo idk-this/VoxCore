@@ -3,12 +3,13 @@ project(VoxCore)
 
 set(CMAKE_CXX_STANDARD 23)
 
-enable_testing()  # Включает поддержку CTest
+enable_testing()
 if (WIN32)
     add_compile_definitions(PLATFORM_WINDOWS)
 elseif(UNIX)
     add_compile_definitions(PLATFORM_LINUX)
 endif()
+
 # === GoogleTest ===
 add_subdirectory(libs/googletest)
 
@@ -39,7 +40,7 @@ target_include_directories(imgui PUBLIC
 )
 target_link_libraries(imgui PUBLIC Vulkan::Vulkan)
 
-# === VoxCore Engine ===
+# === VoxCore Engine (DLL) ===
 file(GLOB_RECURSE ENGINE_SRC
         Application/*.cpp
         Core/**/*.cpp
@@ -53,7 +54,7 @@ file(GLOB_RECURSE ENGINE_HDR
         Platform/**/**/*.h
 )
 
-add_library(VoxCore STATIC ${ENGINE_SRC} ${ENGINE_HDR})
+add_library(VoxCore SHARED ${ENGINE_SRC} ${ENGINE_HDR})
 target_include_directories(VoxCore PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${GLM_INCLUDE_DIR}
@@ -78,6 +79,16 @@ elseif(UNIX)
             ${SHADERC_LIB}
     )
 endif()
+
+set_target_properties(VoxCore PROPERTIES
+        PREFIX ""
+        OUTPUT_NAME "VoxCore"
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/Engine/bin
+        LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/Engine/bin
+        ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/Engine/bin
+)
+
+
 # === Unit Tests ===
 add_executable(VoxCoreTests
         Tests/Basics/SDL_Window_Tests.cpp

@@ -32,8 +32,6 @@ class LogicalDevice;
 class PhysicalDevice;
 class IUISystem;
 
-// Indices (locations) of Queue Families (if they exist at all) TEMP HERE
-
 class VulkanRenderer : public IRenderer {
 public:
     VulkanRenderer();
@@ -46,12 +44,12 @@ public:
     Camera* GetCamera() { return m_camera.get(); }
     uint32_t GetCurrentFrame() const { return m_currentFrame; }
 
-    VulkanInstance* GetInstance() const { return m_instance.get(); }
-    PhysicalDevice* GetPhysicalDevice() const { return m_physicalDevice.get(); }
-    LogicalDevice* GetLogicalDevice() const { return m_logicalDevice.get(); }
-    VulkanSwapChain* GetSwapchain() const { return m_swapchain.get(); }
-    VulkanRenderPass* GetRenderPass() const { return m_renderPass.get(); }
-    VulkanCommandSystem* GetCommandSystem() const { return m_commandSystem.get(); }
+    [[nodiscard]] const std::unique_ptr<VulkanInstance>& GetInstance() const { return m_instance; }
+    [[nodiscard]] const std::unique_ptr<PhysicalDevice>& GetPhysicalDevice() const { return m_physicalDevice; }
+    [[nodiscard]] const std::unique_ptr<LogicalDevice>& GetLogicalDevice() const { return m_logicalDevice; }
+    [[nodiscard]] const std::unique_ptr<VulkanSwapChain>& GetSwapchain() const { return m_swapchain; }
+    [[nodiscard]] const std::unique_ptr<VulkanRenderPass>& GetRenderPass() const { return m_renderPass; }
+    [[nodiscard]] const std::unique_ptr<VulkanCommandSystem>& GetCommandSystem() const { return m_commandSystem; }
 
 private:
     uint32_t m_currentFrame = 0;

@@ -2,6 +2,7 @@
 #include <memory>
 #include <string>
 #include "../Platform/Renderer/Vulkan/VulkanRenderer.h"
+#include "Core/Export.h"
 
 class IWindow;
 class IRenderer;

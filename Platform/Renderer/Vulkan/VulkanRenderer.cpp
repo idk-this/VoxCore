@@ -58,7 +58,7 @@ bool VulkanRenderer::Init(IWindow *window, UWorld* world) {
 		return false;
 	}
 	vulkanShader = new VulkanShader(m_logicalDevice.get());
-	vulkanShader->LoadFromFile("shaders/shader.glsl");
+	vulkanShader->LoadFromFile("Engine/Assets/Shaders/BaseShader.glsl");
 
 	m_graphicsPipeline->SetShader(vulkanShader);
 
@@ -109,7 +109,7 @@ void VulkanRenderer::ProcessRender() {
 	m_commandSystem->GetCommandBuffer(m_currentFrame).bindPipeline(vk::PipelineBindPoint::eGraphics, m_graphicsPipeline->GetHandle());
 
 
-	m_commandSystem->GetCommandBuffer(m_currentFrame).draw(6, 1, 0, 0);
+	m_commandSystem->GetCommandBuffer(m_currentFrame).draw(96, 1, 0, 0);
 
 	m_commandSystem->GetCommandBuffer(m_currentFrame).endRenderPass();
 	m_commandSystem->GetCommandBuffer(m_currentFrame).end();

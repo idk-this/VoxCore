@@ -27,24 +27,40 @@ VulkanInstance::~VulkanInstance() {
 }
 
 bool VulkanInstance::Init() {
-    vk::detail::DynamicLoader loader;
-    PFN_vkGetInstanceProcAddr getInstanceProcAddr = loader.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
-    VULKAN_HPP_DEFAULT_DISPATCHER.init(getInstanceProcAddr);
+    vk::detail::DynamicLoader dl;
+    PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr = dl.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
+    if (!vkGetInstanceProcAddr) {
+        LOG_FATAL("Vulkan", "Failed to get vkGetInstanceProcAddr");
+        return false;
+    }
+    VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
+
+    // Получение расширений
     uint32_t extCount = 0;
     char const* const* exts = SDL_Vulkan_GetInstanceExtensions(&extCount);
+    if (!exts) {
+        LOG_FATAL("Vulkan", "Failed to get SDL Vulkan extensions");
+        return false;
+    }
     std::vector<const char*> extensions(exts, exts + extCount);
-    vk::InstanceCreateInfo instanceInfo({}, &m_appInfo, 0, nullptr, extCount, extensions.data());
 
+
+    vk::InstanceCreateInfo instanceInfo({}, &m_appInfo);
+    instanceInfo.flags |= vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR;
+    instanceInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
+    instanceInfo.ppEnabledExtensionNames = extensions.data();
     instanceInfo.enabledLayerCount = static_cast<uint32_t>(m_enabledLayers.size());
     instanceInfo.ppEnabledLayerNames = m_enabledLayers.data();
+
     try {
         m_instance = vk::createInstance(instanceInfo);
+        VULKAN_HPP_DEFAULT_DISPATCHER.init(m_instance);
+        LOG_INFO("Vulkan", "Vulkan instance created successfully");
+        return true;
     } catch (const vk::SystemError& err) {
         LOG_FATAL("Vulkan", "Failed to create instance: {}", err.what());
         return false;
     }
-    VULKAN_HPP_DEFAULT_DISPATCHER.init(m_instance);
-    LOG_INFO("Vulkan", "Vulkan instance created with {} extensions and {} layers.",
-             extensions.size(), m_enabledLayers.size());
-    return true;
+
+
 }

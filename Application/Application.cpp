@@ -73,9 +73,8 @@ void Application::Run() {
     LOG_INFO("Application", "Shutdown complete.");
 }
 
-// Initializes application dependencies, modules, and resources
 void Application::Init() {
-    // Here will be initialization of modules, resources, settings, convars, etc.
+
 }
 
 // Updates application state (every frame)
@@ -84,8 +83,6 @@ void Application::Update(float dt) {
     if (!vkRenderer) return;
     Camera* camera = vkRenderer->GetCamera();
     if (!camera) return;
-
-    // Используем новый API окна для ввода
 
     float moveSpeed = (window->GetInputComponent()->IsKeyDown(KeyCode::KEY_LEFT_SHIFT) ? 8.0f : 3.0f) * dt;
     glm::vec3 move(0.0f);
