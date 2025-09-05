@@ -20,7 +20,7 @@ public:
     bool Create(int width, int height, const std::string& title) override;
     void PollEvents() override;
     void SwapBuffers() override;
-    bool ShouldClose() const override;
+    [[nodiscard]] bool ShouldClose() const override;
     void* GetNativeHandle() override;
     void SetRelativeMouseMode(bool enable) override;
     void SetTitle(const std::string& title) override;

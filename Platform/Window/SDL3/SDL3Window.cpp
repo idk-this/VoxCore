@@ -24,7 +24,11 @@ SDL3Window::~SDL3Window() {
 }
 
 bool SDL3Window::Create(int width, int height, const std::string &title) {
-    IWindow::Create(width, height, title);
+    if (!IWindow::Create(width, height, title))
+    {
+        LOG_FATAL("Window", "Failed to initialize window!!!");
+        return false;
+    }
     int SDLInitStatus = SDL_Init(SDL_INIT_VIDEO);
     if (SDLInitStatus != 1)
     {
@@ -32,8 +36,13 @@ bool SDL3Window::Create(int width, int height, const std::string &title) {
         return false;
     }
     m_window = SDL_CreateWindow(title.c_str(), width, height, SDL_WINDOW_VULKAN);
-    inputComponent = new WindowInputComponent();
+    if (!m_window) {
+        LOG_FATAL("Window", "Failed to create window: {}", SDL_GetError());
+        return false;
+    }
 
+    inputComponent = new WindowInputComponent();
+    return true;
     return m_window != nullptr;
 }
 
