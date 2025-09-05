@@ -9,9 +9,10 @@
 
 #include "../IWindow.h"
 #include "SDL3/SDL_video.h"
+#include "Core/Export.h"
 
 
-class SDL3Window : public IWindow {
+class VOXCORE_API SDL3Window : public IWindow {
 public:
     SDL3Window();
     ~SDL3Window() override;

@@ -16,6 +16,7 @@
 #include "Core/VulkanInstance.h"
 #include "Camera.h"
 #include "Pipeline/GraphicsPipeline.h"
+#include "Core/Export.h"
 
 struct CameraUBO {
     glm::mat4 view;
@@ -32,7 +33,7 @@ class LogicalDevice;
 class PhysicalDevice;
 class IUISystem;
 
-class VulkanRenderer : public IRenderer {
+class VOXCORE_API VulkanRenderer : public IRenderer {
 public:
     VulkanRenderer();
     ~VulkanRenderer() override;

@@ -10,6 +10,7 @@
 #include <chrono>
 #include <iomanip>
 #include <source_location>
+#include "Core/Export.h"
 
 enum class LogLevel {
     Info,
@@ -17,19 +18,13 @@ enum class LogLevel {
     Error,
     Fatal
 };
-
-class Logger {
+struct ChannelConfig {
+    std::vector<std::ostream*> outputs;
+    bool use_colors = true;
+};
+class VOXCORE_API Logger {
 public:
-    struct ChannelConfig {
-        std::vector<std::ostream*> outputs;
-        bool use_colors = true;
-    };
-
-    static Logger& instance() {
-        static Logger logger;
-        return logger;
-    }
-
+    static Logger& instance();
     void add_output(const std::string& channel, std::ostream& os, bool use_colors = true) {
         std::lock_guard lock(mutex_);
         channels_[channel].outputs.push_back(&os);
@@ -148,7 +143,6 @@ private:
     std::map<std::string, std::vector<std::ofstream>> file_streams_;
 };
 
-// Макросы с явной передачей source_location
 #define LOG_INFO(channel, fmt, ...) \
 Logger::instance().log(LogLevel::Info, channel, std::source_location::current(), fmt, ##__VA_ARGS__)
 

@@ -22,7 +22,7 @@
 #include "Core/ECS/Components/UMeshComponent.h"
 #include <unordered_map>
 
-CONVAR("r_max_frames_in_flight", 2, "Maximum number of frames in flight for Vulkan swapchain", CVAR_RUNTIME_ONLY);
+CONVAR("r_max_frames_in_flight", 2, "Maximum number of frames in flight for swapchain", CVAR_RUNTIME_ONLY);
 
 
 VulkanRenderer::VulkanRenderer() {

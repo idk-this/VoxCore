@@ -13,14 +13,13 @@ namespace Engine {
      * Base class for the engine application.
      * Defines the lifecycle: initialization, main loop, shutdown.
      */
-    class Application {
+    class VOXCORE_API Application {
     public:
         Application();
-        Application(std::string title, int width, int height);
         virtual ~Application();
 
         // Starts the main application loop
-        void Run();
+        virtual void Run();
 
         VulkanRenderer* GetVulkanRenderer() {
             return dynamic_cast<VulkanRenderer*>(renderer.get());
@@ -37,7 +36,7 @@ namespace Engine {
         std::unique_ptr<IWindow> window;
         std::unique_ptr<IRenderer> renderer;
 
-    private:
+    protected:
         Application(const Application&) = delete;
         Application& operator=(const Application&) = delete;
 

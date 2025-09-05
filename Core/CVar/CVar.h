@@ -13,7 +13,7 @@
 #include <mutex>
 #include <memory>
 #include "Flags.h"
-
+#include "Core/Export.h"
 using CVarValue = std::variant<int, float, bool, std::string>;
 
 struct ConVar {
@@ -33,7 +33,7 @@ struct ConVar {
     static void Register(ConVar* var);
 };
 
-class CVarManager {
+class VOXCORE_API CVarManager {
 public:
     static CVarManager& Instance();
 

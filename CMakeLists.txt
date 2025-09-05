@@ -9,7 +9,8 @@ if (WIN32)
 elseif(UNIX)
     add_compile_definitions(PLATFORM_LINUX)
 endif()
-
+set(RESOURCES_SRC "${CMAKE_CURRENT_SOURCE_DIR}/Resources")
+set(RESOURCES_DST "${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/Engine")
 # === GoogleTest ===
 add_subdirectory(libs/googletest)
 
@@ -44,6 +45,7 @@ target_link_libraries(imgui PUBLIC Vulkan::Vulkan)
 file(GLOB_RECURSE ENGINE_SRC
         Application/*.cpp
         Core/**/*.cpp
+        Core/**/**/*.cpp
         Platform/**/*.cpp
         Platform/**/**/*.cpp
 )
@@ -55,6 +57,7 @@ file(GLOB_RECURSE ENGINE_HDR
 )
 
 add_library(VoxCore SHARED ${ENGINE_SRC} ${ENGINE_HDR})
+
 target_include_directories(VoxCore PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${GLM_INCLUDE_DIR}
@@ -79,16 +82,21 @@ elseif(UNIX)
             ${SHADERC_LIB}
     )
 endif()
+target_compile_definitions(VoxCore PRIVATE VOXCORE_BUILD_DLL)
 
 set_target_properties(VoxCore PROPERTIES
         PREFIX ""
         OUTPUT_NAME "VoxCore"
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/Engine/bin
         LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/Engine/bin
-        ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/Engine/bin
 )
 
-
+add_custom_target(copy_resources ALL
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${RESOURCES_DST}"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory "${RESOURCES_SRC}" "${RESOURCES_DST}"
+        COMMENT "Copying resources to ${RESOURCES_DST}"
+)
+add_dependencies(VoxCore copy_resources)
 # === Unit Tests ===
 add_executable(VoxCoreTests
         Tests/Basics/SDL_Window_Tests.cpp
