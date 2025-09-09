@@ -19,6 +19,7 @@ public:
     virtual ~IShader() = default;
 
     virtual void LoadFromFile(const std::string& filepath) = 0;
+    virtual void LoadFromSource(const std::string& source) = 0;
 
     virtual const std::unordered_map<ShaderStage, std::vector<uint32_t>>& GetBinaryData() const = 0;
 };

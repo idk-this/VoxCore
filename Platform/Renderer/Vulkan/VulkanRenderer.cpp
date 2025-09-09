@@ -21,6 +21,7 @@
 #include "Core/ECS/Components/UTransformComponent.h"
 #include "Core/ECS/Components/UMeshComponent.h"
 #include <unordered_map>
+#include "Core/Utils/FileSystem.h"
 
 CONVAR("r_max_frames_in_flight", 2, "Maximum number of frames in flight for swapchain", CVAR_RUNTIME_ONLY);
 
@@ -33,8 +34,16 @@ VulkanRenderer::VulkanRenderer() {
 	m_renderPass = std::make_unique<VulkanRenderPass>(m_instance.get(), m_logicalDevice.get(), m_swapchain.get());
 	m_graphicsPipeline = std::make_unique<GraphicsPipeline>( m_logicalDevice.get(), m_physicalDevice.get(), m_renderPass.get(), m_swapchain.get());
 	m_commandSystem = std::make_unique<VulkanCommandSystem>(m_instance.get(), m_logicalDevice.get(), m_renderPass.get(), m_swapchain.get(), m_graphicsPipeline.get());
+	if (!m_shaderPak.Open(FileSystem::GetWorkingDirectory() + "Engine/Content/Paks/VulkanShaders.voxpak"))
+	{
+		LOG_FATAL("Vulkan", "Failed to open VulkanShaders.voxpak");
+	}
 	// Инициализация камеры: позиция, yaw, pitch, fov, aspect, near, far
-	m_camera = std::make_unique<Camera>(glm::vec3(0.0f, 0.0f, 1.0f), 180.0f, 0.0f, 60.0f, 16.0f/9.0f, 0.1f, 100.0f);
+	/*m_camera = std::make_unique<VulkanCameraUBO>(
+		m_logicalDevice->GetHandle(),
+		m_graphicsPipeline->GetCameraDescriptorSetLayout(),
+		m_graphicsPipeline->GetDescriptorPool()
+	);*/
 };
 VulkanRenderer::~VulkanRenderer() {
 	//Cleanup();
@@ -58,7 +67,8 @@ bool VulkanRenderer::Init(IWindow *window, UWorld* world) {
 		return false;
 	}
 	vulkanShader = new VulkanShader(m_logicalDevice.get());
-	vulkanShader->LoadFromFile("Engine/Assets/Shaders/BaseShader.glsl");
+	vulkanShader->LoadFromSource(m_shaderPak.ReadFileWithOverrideString("SimpleRectangle.shader"));
+
 
 	m_graphicsPipeline->SetShader(vulkanShader);
 

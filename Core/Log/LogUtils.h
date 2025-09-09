@@ -78,14 +78,14 @@ namespace Engine::Core::Log {
     }
 }
 
-// Макрос для создания таймера с автоматическим именем на основе местоположения в коде
+
 #define LOG_FUNCTION_TIMER() \
     ::Engine::Core::Log::ScopedTimer timer##__LINE__(__FUNCTION__)
 
-// Макрос для замера времени выполнения произвольного блока кода
+
 #define LOG_TIMED_BLOCK(name) \
     ::Engine::Core::Log::ScopedTimer timer##__LINE__(name)
 
-// Макрос для логирования типа переменной
+
 #define LOG_TYPE(variable) \
     LOGF_DEBUG("Type of {} is {}", #variable, ::Engine::Core::Log::TypeName<decltype(variable)>())

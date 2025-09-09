@@ -18,6 +18,7 @@ public:
     ~VulkanShader() override;
 
     void LoadFromFile(const std::string& filepath) override;
+    void LoadFromSource(const std::string& source) override;
     const std::unordered_map<ShaderStage, std::vector<uint32_t>>& GetBinaryData() const override;
 
     const std::unordered_map<ShaderStage, vk::ShaderModule>& GetShaderModules() const;

@@ -14,14 +14,11 @@
 #include <glm/glm.hpp>
 
 #include "Core/VulkanInstance.h"
-#include "Camera.h"
+#include "Common/VulkanCameraUBO.h"
 #include "Pipeline/GraphicsPipeline.h"
 #include "Core/Export.h"
+#include "Core/Common/VoxPak.h"
 
-struct CameraUBO {
-    glm::mat4 view;
-    glm::mat4 proj;
-};
 
 class VulkanCommandSystem;
 class TrianglePipeline;
@@ -42,7 +39,7 @@ public:
     void ProcessRender();
     void EndFrame() override;
 
-    Camera* GetCamera() { return m_camera.get(); }
+    //VulkanCameraUBO* GetCamera() { return m_camera.get(); }
     uint32_t GetCurrentFrame() const { return m_currentFrame; }
 
     [[nodiscard]] const std::unique_ptr<VulkanInstance>& GetInstance() const { return m_instance; }
@@ -62,8 +59,8 @@ private:
     std::unique_ptr<VulkanRenderPass> m_renderPass;
     std::unique_ptr<GraphicsPipeline> m_graphicsPipeline;
     std::unique_ptr<VulkanCommandSystem> m_commandSystem;
-    std::unique_ptr<Camera> m_camera;
-
+   // std::unique_ptr<VulkanCameraUBO> m_camera;
+    VoxPak m_shaderPak;
 
     std::vector<vk::Semaphore> m_imageAvailableSemaphores;
     std::vector<vk::Semaphore> m_renderFinishedSemaphores;

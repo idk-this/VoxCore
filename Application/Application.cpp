@@ -52,8 +52,8 @@ void Application::Init() {
 void Application::Update(float dt) {
     VulkanRenderer* vkRenderer = GetVulkanRenderer();
     if (!vkRenderer) return;
-    Camera* camera = vkRenderer->GetCamera();
-    if (!camera) return;
+    //Camera* camera = vkRenderer->GetCamera();
+   // if (!camera) return;
 
     float moveSpeed = (window->GetInputComponent()->IsKeyDown(KeyCode::KEY_LEFT_SHIFT) ? 8.0f : 3.0f) * dt;
     glm::vec3 move(0.0f);
@@ -63,7 +63,7 @@ void Application::Update(float dt) {
     if (window->GetInputComponent()->IsKeyDown(KeyCode::KEY_D)) move.x += moveSpeed;
     if (window->GetInputComponent()->IsKeyDown(KeyCode::KEY_SPACE)) move.y += moveSpeed;
     if (window->GetInputComponent()->IsKeyDown(KeyCode::KEY_LEFT_CONTROL)) move.y -= moveSpeed;
-    if (glm::length(move) > 0.0f) camera->Move(move);
+   // if (glm::length(move) > 0.0f) camera->Move(move);
 
     static bool mouseCaptured = false;
     static bool lastRightButton = false;
@@ -76,7 +76,7 @@ void Application::Update(float dt) {
 
     if (mouseCaptured) {
         float sensitivity = 0.12f;
-        camera->Rotate(window->GetInputComponent()->GetMouseState().deltaX * sensitivity, -window->GetInputComponent()->GetMouseState().deltaY * sensitivity);
+        //camera->Rotate(window->GetInputComponent()->GetMouseState().deltaX * sensitivity, -window->GetInputComponent()->GetMouseState().deltaY * sensitivity);
     }
 
 }

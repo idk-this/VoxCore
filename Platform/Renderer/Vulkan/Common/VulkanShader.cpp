@@ -72,7 +72,7 @@ std::vector<uint32_t> VulkanShader::CompileGLSL(const std::string& source, shade
 void VulkanShader::LoadFromFile(const std::string& filepath) {
     std::ifstream file(filepath, std::ios::binary);
     if (!file.is_open()) {
-        LOG_ERROR("Shader", "Failed to open shader file: {}\n", filepath.c_str());
+        LOG_ERROR("Shader", "Failed to open shader file: {}", filepath);
         throw std::runtime_error("Failed to open shader file: " + filepath);
     }
 
@@ -82,45 +82,52 @@ void VulkanShader::LoadFromFile(const std::string& filepath) {
         file.seekg(0);
     }
 
-    std::unordered_map<std::string, std::string> sources;
-    std::string line;
-    std::stringstream current;
-    std::string type;
-
     std::string fileContent((std::istreambuf_iterator<char>(file)),
                              std::istreambuf_iterator<char>());
-    std::istringstream iss(fileContent);
+
+    LoadFromSource(fileContent);
+}
+
+void VulkanShader::LoadFromSource(const std::string& source)
+{
+    std::unordered_map<std::string, std::string> sources;
+    std::stringstream currentSource;
+    std::string currentType;
+    std::istringstream iss(source);
+    std::string line;
 
     while (std::getline(iss, line)) {
         line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
 
-        if (line.find("#type") == 0) {
-            if (!type.empty()) {
-                sources[type] = current.str();
-                current.str("");
-                current.clear();
+        if (line.rfind("#type", 0) == 0) {
+            if (!currentType.empty()) {
+                sources[currentType] = currentSource.str();
+                currentSource.str("");
+                currentSource.clear();
             }
-            type = line.substr(5);
-            type.erase(0, type.find_first_not_of(" \t\r\n"));
-            type.erase(type.find_last_not_of(" \t\r\n") + 1);
-            std::transform(type.begin(), type.end(), type.begin(), ::tolower);
+
+            currentType = line.substr(5);
+            currentType.erase(0, currentType.find_first_not_of(" \t\n\r"));
+            currentType.erase(currentType.find_last_not_of(" \t\n\r") + 1);
+            std::transform(currentType.begin(), currentType.end(), currentType.begin(), ::tolower);
         } else {
-            current << line << '\n';
+            currentSource << line << '\n';
         }
     }
-    if (!type.empty()) {
-        sources[type] = current.str();
+    if (!currentType.empty()) {
+        sources[currentType] = currentSource.str();
     }
 
     auto stageMap = StringToShaderStage();
 
-    for (const auto& [typeStr, source] : sources) {
+    for (const auto& [typeStr, src] : sources) {
         if (!stageMap.contains(typeStr)) {
             LOG_ERROR("Shader", "Unknown shader type encountered: '{}'", typeStr);
-            return;
+            continue;
         }
+
         ShaderStage stage = stageMap.at(typeStr);
-        auto spirv = CompileGLSL(source, GetShadercKind(stage));
+        auto spirv = CompileGLSL(src, GetShadercKind(stage));
 
         vk::ShaderModuleCreateInfo info{};
         info.codeSize = spirv.size() * sizeof(uint32_t);
