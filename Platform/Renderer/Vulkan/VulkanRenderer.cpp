@@ -34,7 +34,7 @@ VulkanRenderer::VulkanRenderer() {
 	m_renderPass = std::make_unique<VulkanRenderPass>(m_instance.get(), m_logicalDevice.get(), m_swapchain.get());
 	m_graphicsPipeline = std::make_unique<GraphicsPipeline>( m_logicalDevice.get(), m_physicalDevice.get(), m_renderPass.get(), m_swapchain.get());
 	m_commandSystem = std::make_unique<VulkanCommandSystem>(m_instance.get(), m_logicalDevice.get(), m_renderPass.get(), m_swapchain.get(), m_graphicsPipeline.get());
-	if (!m_shaderPak.Open(FileSystem::GetWorkingDirectory() + "Engine/Content/Paks/VulkanShaders.voxpak"))
+	if (!m_shaderPak.Open(FileSystem::GetWorkingDirectory() + "Content/Paks/VulkanShaders.voxpak"))
 	{
 		LOG_FATAL("Vulkan", "Failed to open VulkanShaders.voxpak");
 	}

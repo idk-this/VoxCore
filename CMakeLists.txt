@@ -13,7 +13,11 @@ endif()
 
 
 set(RESOURCES_SRC "${CMAKE_CURRENT_SOURCE_DIR}/Resources")
-set(RESOURCES_DST "${CMAKE_BINARY_DIR}/$<CONFIG>/Engine")
+set(RESOURCES_DST "${CMAKE_BINARY_DIR}/$<CONFIG>/Content")
+
+
+set(LIBS_SRC "${CMAKE_CURRENT_SOURCE_DIR}/runtime_libs")
+set(LIBS_DST "${CMAKE_BINARY_DIR}/$<CONFIG>/Engine")
 
 add_subdirectory(libs/googletest)
 
@@ -47,8 +51,15 @@ file(GLOB_RECURSE ENGINE_SRC
         Platform/*.cpp
         Platform/**/*.cpp
 )
+file(GLOB_RECURSE ENGINE_HDR
+        Application/*.h
+        Core/*.h
+        Core/**/*.h
+        Platform/*.h
+        Platform/**/*.h
+)
 
-add_library(VoxCore SHARED ${ENGINE_SRC})
+add_library(VoxCore SHARED ${ENGINE_SRC} ${ENGINE_HDR})
 
 target_include_directories(VoxCore PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
@@ -75,9 +86,9 @@ target_compile_definitions(VoxCore PRIVATE VOXCORE_BUILD_DLL)
 
 set_target_properties(VoxCore PROPERTIES
         PREFIX ""
-        OUTPUT_NAME "VoxCore"
-        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIG>/Engine/bin"
-        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIG>/Engine/bin"
+        OUTPUT_NAME "VoxCore.Engine"
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIG>/Engine"
+        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIG>/Engine"
 )
 
 
@@ -86,7 +97,16 @@ add_custom_command(TARGET VoxCore POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory "${RESOURCES_SRC}" "${RESOURCES_DST}"
         COMMENT "Copying resources to ${RESOURCES_DST}"
 )
-
+if (EXISTS "${LIBS_SRC}" AND IS_DIRECTORY "${LIBS_SRC}")
+    file(GLOB LIB_FILES "${LIBS_SRC}/*")
+    if (LIB_FILES)
+        add_custom_command(TARGET VoxCore POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E make_directory "${LIBS_DST}"
+                COMMAND ${CMAKE_COMMAND} -E copy_directory "${LIBS_SRC}" "${LIBS_DST}"
+                COMMENT "Copying libs to ${LIBS_DST}"
+        )
+    endif()
+endif()
 
 add_executable(VoxCoreTests Tests/Basics/SDL_Window_Tests.cpp)
 target_link_libraries(VoxCoreTests PRIVATE VoxCore gtest gtest_main)

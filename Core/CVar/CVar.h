@@ -9,26 +9,31 @@
 #include <unordered_map>
 #include <variant>
 #include <functional>
-#include <iostream>
+
 #include <mutex>
 #include <memory>
+#include <optional>
+
 #include "Flags.h"
 #include "Core/Export.h"
 using CVarValue = std::variant<int, float, bool, std::string>;
 
-struct ConVar {
+struct VOXCORE_API ConVar {
     std::string name;
     std::string description;
     CVarValue value;
     int flags;
+    std::optional<CVarValue> minValue;
+    std::optional<CVarValue> maxValue;
 
-    ConVar(const std::string& name, CVarValue defaultValue, const std::string& description, int flags);
+    ConVar(const std::string& name, CVarValue defaultValue, const std::string& description, int flags,
+           std::optional<CVarValue> min = std::nullopt, std::optional<CVarValue> max = std::nullopt);
 
     template<typename T>
     T Get() const { return std::get<T>(value); }
 
-    template<typename T>
-    void Set(T newValue) { value = newValue; }
+    bool SetValue(const CVarValue& newValue); // Returns true if value was set
+    bool CheckConstraints(CVarValue newValue) const;
 
     static void Register(ConVar* var);
 };
@@ -43,7 +48,8 @@ public:
     void Set(const std::string& name, CVarValue val);
 
     bool IsReadOnly(const std::string& name);
-
+    void SaveToFile(const std::string& filename = "Config/CVars.txt");
+    void LoadFromFile(const std::string& filename = "Config/CVars.txt");
 private:
     std::unordered_map<std::string, ConVar*> vars;
     std::mutex mutex_;
@@ -57,10 +63,14 @@ static ConVar CONCAT(cvar_, __LINE__)(name, defaultVal, desc, flags)
 (CVarManager::Instance().Get(name) ? std::get<type>(CVarManager::Instance().Get(name)->value) : type{})
 #define GET_CVAR_DESC(name) \
 (CVarManager::Instance().Get(name) ? CVarManager::Instance().Get(name)->description : "")
+#define CONVAR(name, defaultVal, desc, flags) \
+static ConVar CONCAT(cvar_, __LINE__)(name, defaultVal, desc, flags)
+#define CONVAR_MINMAX(name, defaultVal, desc, flags, minVal, maxVal) \
+static ConVar CONCAT(cvar_, __LINE__)(name, defaultVal, desc, flags, minVal, maxVal)
 #define SET_CVAR(name, newVal) \
     do { \
         auto* var = CVarManager::Instance().Get(name); \
-        if (var) var->Set(newVal); \
+        if (var) var->SetValue(newVal); \
     } while (0)
 
 

@@ -35,27 +35,31 @@ bool VoxPak::Open(const std::string& pakFile) {
         ifs.read(reinterpret_cast<char*>(&sz), sizeof(sz));
         entries.push_back({path, off, sz});
     }
-
-    int modCount = 0;
     pakModOverride.clear();
+    bool allowMods = GET_CVAR(bool, "sv_allow_modding");
+    if (!allowMods)
+    {
+        LOG_INFO("VoxPak", "Opened {} with {} files. Mods disabled.", pakFile, entries.size());
+        return true;
+    }
+    int modCount = 0;
+    std::filesystem::path modsPath(FileSystem::GetWorkingDirectory() + "Content/Mods");
+    std::string pakName = std::filesystem::path(pakFile).stem().string();
 
-    if (GET_CVAR(bool, "sv_allow_modding")) {
-        std::filesystem::path modsPath(FileSystem::GetWorkingDirectory() + "Game/Content/Mods");
-        std::string pakName = std::filesystem::path(pakFile).stem().string();
+    if (!std::filesystem::exists(modsPath) || !std::filesystem::is_directory(modsPath))
+    {
+        LOG_INFO("VoxPak", "Opened {} with {} files. {} mods override this pak.", pakFile, entries.size(), modCount);
+        return true;
+    }
+    for (auto& modDir : std::filesystem::directory_iterator(modsPath)) {
+        if (!modDir.is_directory()) continue;
 
-        if (std::filesystem::exists(modsPath) && std::filesystem::is_directory(modsPath)) {
-            for (auto& modDir : std::filesystem::directory_iterator(modsPath)) {
-                if (!modDir.is_directory()) continue;
-
-                std::filesystem::path pakDir = modDir.path() / pakName;
-                if (std::filesystem::exists(pakDir) && std::filesystem::is_directory(pakDir)) {
-                    pakModOverride.push_back(pakDir);
-                    modCount++;
-                }
-            }
+        std::filesystem::path pakDir = modDir.path() / pakName;
+        if (std::filesystem::exists(pakDir) && std::filesystem::is_directory(pakDir)) {
+            pakModOverride.push_back(pakDir);
+            modCount++;
         }
     }
-
     LOG_INFO("VoxPak", "Opened {} with {} files. {} mods override this pak.", pakFile, entries.size(), modCount);
     return true;
 }

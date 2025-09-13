@@ -17,13 +17,11 @@
 #include "Core/ECS/BaseClasses/UWorld.h"
 #include "Core/ECS/Components/UTransformComponent.h"
 #include "Core/ECS/Components/UMeshComponent.h"
+#include "Core/Utils/FileSystem.h"
 #include "Platform/Window/Components/WindowInputComponent.h"
 
 using namespace Engine;
 
-CONVAR("w_title", "VoxCore base", "Game window title", CVAR_RUNTIME_ONLY);
-CONVAR("w_size_width", 1920, "Game window width", CVAR_ARCHIVE);
-CONVAR("w_size_height", 1080, "Game window height", CVAR_ARCHIVE);
 
 Application::Application() = default;
 
@@ -45,7 +43,7 @@ void Application::Run() {
 }
 
 void Application::Init() {
-
+    CVarManager::Instance().LoadFromFile(FileSystem::GetWorkingDirectory() + "/Config/CVars.cfg");
 }
 
 // Updates application state (every frame)
