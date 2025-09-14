@@ -48,8 +48,8 @@ bool GraphicsPipeline::Init() {
 
     vk::PipelineVertexInputStateCreateInfo vertexInputInfo(
         {},
-        0, nullptr,
-        0, nullptr
+        1, binding,
+        1, attrs
     );
     vk::PipelineInputAssemblyStateCreateInfo inputAssembly({}, vk::PrimitiveTopology::eTriangleList);
 
@@ -106,4 +106,9 @@ GraphicsPipeline* GraphicsPipeline::SetPushConstantRange(vk::ShaderStageFlags st
 GraphicsPipeline * GraphicsPipeline::SetDescriptorSetLayouts(const std::vector<vk::DescriptorSetLayout> &layouts) {
     m_descriptorSetLayouts = layouts;
     return this;
+}
+
+void GraphicsPipeline::BindDescriptorSet(vk::CommandBuffer* cmd, vk::DescriptorSet descriptorSet)
+{
+    cmd->bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
 }

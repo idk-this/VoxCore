@@ -13,6 +13,7 @@
 #include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
 
+#include "Camera.h"
 #include "Core/VulkanInstance.h"
 #include "Common/VulkanCameraUBO.h"
 #include "Pipeline/GraphicsPipeline.h"
@@ -38,8 +39,8 @@ public:
     void BeginFrame() override;
     void ProcessRender();
     void EndFrame() override;
-
-    //VulkanCameraUBO* GetCamera() { return m_camera.get(); }
+    Camera* TempCamera;
+    Camera* GetCamera() { return TempCamera; }
     uint32_t GetCurrentFrame() const { return m_currentFrame; }
 
     [[nodiscard]] const std::unique_ptr<VulkanInstance>& GetInstance() const { return m_instance; }
@@ -59,14 +60,13 @@ private:
     std::unique_ptr<VulkanRenderPass> m_renderPass;
     std::unique_ptr<GraphicsPipeline> m_graphicsPipeline;
     std::unique_ptr<VulkanCommandSystem> m_commandSystem;
-   // std::unique_ptr<VulkanCameraUBO> m_camera;
+    std::unique_ptr<VulkanCameraUBO> m_camera;
+
     VoxPak m_shaderPak;
 
     std::vector<vk::Semaphore> m_imageAvailableSemaphores;
     std::vector<vk::Semaphore> m_renderFinishedSemaphores;
     std::vector<vk::Fence> m_inFlightFences;
-
-    vk::DescriptorSetLayout m_cameraDescriptorSetLayout;
 
     vk::SurfaceKHR m_surface = nullptr;
     std::chrono::high_resolution_clock::time_point m_startTime;

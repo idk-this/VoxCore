@@ -8,12 +8,10 @@
 struct CameraData {
     glm::mat4 view;
     glm::mat4 proj;
-    glm::vec3 position;
 };
 
-class ICameraUBO {
+class  ICameraUBO {
 public:
     virtual ~ICameraUBO() = default;
-    virtual void Update(const CameraData& data) = 0;
-    virtual void* GetHandle() const = 0;
+    virtual void Update(void* cmd, const CameraData& data) = 0;
 };

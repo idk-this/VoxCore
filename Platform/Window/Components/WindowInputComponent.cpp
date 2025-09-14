@@ -19,9 +19,9 @@ void WindowInputComponent::UpdateKeyState(KeyCode key, bool pressed) {
     }
 }
 
-void WindowInputComponent::UpdateMouseMotion(int x, int y) {
-    m_mouse.deltaX = x - m_mouse.x;
-    m_mouse.deltaY = y - m_mouse.y;
+void WindowInputComponent::UpdateMouseMotion(int x, int y, int dx, int dy) {
+    m_mouse.deltaX = dx;
+    m_mouse.deltaY = dy;
     m_mouse.x = x;
     m_mouse.y = y;
 }

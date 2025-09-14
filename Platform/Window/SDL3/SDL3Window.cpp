@@ -61,7 +61,7 @@ void SDL3Window::PollEvents() {
                 inputComponent->UpdateKeyState(ConvertKey(event.key.scancode), false);
                 break;
             case SDL_EVENT_MOUSE_MOTION:
-                inputComponent->UpdateMouseMotion(event.motion.x, event.motion.y);
+                inputComponent->UpdateMouseMotion(event.motion.x, event.motion.y, event.motion.xrel, event.motion.yrel);
                 break;
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
                 inputComponent->SetMouseButtonState(event.button.button, true);
@@ -90,7 +90,10 @@ void *SDL3Window::GetNativeHandle() {
 void SDL3Window::SetRelativeMouseMode(bool enable) {
     SDL_SetWindowMouseGrab(m_window, enable);
     enable ? SDL_HideCursor() : SDL_ShowCursor();
-    SDL_SetWindowRelativeMouseMode(m_window, enable);
+
+    if (SDL_SetWindowRelativeMouseMode(m_window, enable) < 0) {
+        SDL_Log("Failed to set relative mode: %s", SDL_GetError());
+    }
 }
 
 

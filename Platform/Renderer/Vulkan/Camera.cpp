@@ -21,8 +21,8 @@ void Camera::Move(const glm::vec3& offset) {
 void Camera::Rotate(float yawOffset, float pitchOffset) {
     m_yaw += yawOffset;
     m_pitch += pitchOffset;
-    if (m_pitch > 89.0f) m_pitch = 89.0f;
-    if (m_pitch < -89.0f) m_pitch = -89.0f;
+    if (m_pitch > 179.0f) m_pitch = 179.0f;
+    if (m_pitch < -179.0f) m_pitch = -179.0f;
     UpdateView();
 }
 

@@ -4,21 +4,27 @@
 
 #pragma once
 #include "Platform/Renderer/Common/ICameraUBO.h"
+#include <vulkan/vulkan.hpp>
 
+#include "VulkanBuffer.h"
+#include "Core/Export.h"
 
-/*
-class VulkanCameraUBO : public ICameraUBO {
+class GraphicsPipeline;
+class LogicalDevice;
+
+class VOXCORE_API VulkanCameraUBO : public ICameraUBO {
 public:
-    VulkanCameraUBO(vk::Device device,
-                    vk::DescriptorSetLayout layout,
-                    vk::DescriptorPool pool);
-
-    void Update(const CameraData& data) override;
-    void* GetHandle() const override { return (void*)&m_descriptorSet; }
+    VulkanCameraUBO(LogicalDevice* logicalDevice, PhysicalDevice* physicalDevice);
+    bool PreInit(GraphicsPipeline* pipeline);
+    bool Init();
+    void Update(void* cmd, const CameraData& data) override;
+    vk::DescriptorSetLayout GetDescriptorSetLayout() const { return m_cameraDescriptorSetLayout; }
 
 private:
-    VulkanBuffer m_buffer; // твой wrapper
-    vk::DescriptorSet m_descriptorSet;
-    vk::Device m_device;
+    GraphicsPipeline* m_graphicsPipeline;
+    LogicalDevice* m_logicalDevice;
+    VulkanBuffer* m_cameraBuffer;
+    vk::DescriptorSetLayout m_cameraDescriptorSetLayout;
+    vk::DescriptorPool m_cameraDescriptorPool;
+    vk::DescriptorSet m_cameraDescriptorSet;
 };
-*/

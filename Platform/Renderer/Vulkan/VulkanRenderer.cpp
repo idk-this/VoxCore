@@ -26,25 +26,31 @@
 CONVAR("r_max_frames_in_flight", 2, "Maximum number of frames in flight for swapchain", CVAR_RUNTIME_ONLY);
 
 
-VulkanRenderer::VulkanRenderer() {
+VulkanRenderer::VulkanRenderer()
+{
 	m_instance = std::make_unique<VulkanInstance>();
 	m_physicalDevice = std::make_unique<PhysicalDevice>(m_instance.get());
 	m_logicalDevice = std::make_unique<LogicalDevice>(m_instance.get());
 	m_swapchain = std::make_unique<VulkanSwapChain>(m_instance.get(), m_physicalDevice.get(), m_logicalDevice.get());
 	m_renderPass = std::make_unique<VulkanRenderPass>(m_instance.get(), m_logicalDevice.get(), m_swapchain.get());
-	m_graphicsPipeline = std::make_unique<GraphicsPipeline>( m_logicalDevice.get(), m_physicalDevice.get(), m_renderPass.get(), m_swapchain.get());
-	m_commandSystem = std::make_unique<VulkanCommandSystem>(m_instance.get(), m_logicalDevice.get(), m_renderPass.get(), m_swapchain.get(), m_graphicsPipeline.get());
+	m_graphicsPipeline = std::make_unique<GraphicsPipeline>(m_logicalDevice.get(), m_physicalDevice.get(),
+	                                                        m_renderPass.get(), m_swapchain.get());
+	m_commandSystem = std::make_unique<VulkanCommandSystem>(m_instance.get(), m_logicalDevice.get(), m_renderPass.get(),
+	                                                        m_swapchain.get(), m_graphicsPipeline.get());
 	if (!m_shaderPak.Open(FileSystem::GetWorkingDirectory() + "Content/Paks/VulkanShaders.voxpak"))
 	{
 		LOG_FATAL("Vulkan", "Failed to open VulkanShaders.voxpak");
 	}
-	// Инициализация камеры: позиция, yaw, pitch, fov, aspect, near, far
-	/*m_camera = std::make_unique<VulkanCameraUBO>(
-		m_logicalDevice->GetHandle(),
-		m_graphicsPipeline->GetCameraDescriptorSetLayout(),
-		m_graphicsPipeline->GetDescriptorPool()
-	);*/
-};
+	TempCamera = new Camera(glm::vec3(1.0f, 0.0f, 3.0f), // position
+		-90.0f, // yaw (смотрим вдоль -Z)
+		0.0f, // pitch
+		90.0f, // fov
+		16.0f / 9.0f, // aspect ratio (например, 1920/1080)
+		0.1f, // near plane
+		100.0f);
+	m_camera = std::make_unique<VulkanCameraUBO>(m_logicalDevice.get(), m_physicalDevice.get());
+
+} ;
 VulkanRenderer::~VulkanRenderer() {
 	//Cleanup();
 };
@@ -72,11 +78,17 @@ bool VulkanRenderer::Init(IWindow *window, UWorld* world) {
 
 	m_graphicsPipeline->SetShader(vulkanShader);
 
+	m_camera->PreInit(m_graphicsPipeline.get());
+
+	m_graphicsPipeline->SetDescriptorSetLayouts({m_camera->GetDescriptorSetLayout()});
+
 	m_graphicsPipeline->Init();
 	m_swapchain->CreateFramebuffers(m_renderPass.get());
 	if (!m_commandSystem->Init(m_physicalDevice->GetGraphicsQueueFamilyIndex())) {
 		return false;
 	}
+
+	m_camera->Init();
 	m_imageAvailableSemaphores.resize(GET_CVAR(int, "r_max_frames_in_flight"));
 	m_renderFinishedSemaphores.resize(m_swapchain->GetImageCount());
 	m_inFlightFences.resize(GET_CVAR(int, "r_max_frames_in_flight"));
@@ -102,7 +114,10 @@ void VulkanRenderer::ProcessRender() {
 	vk::CommandBufferBeginInfo beginInfo{};
 
 	m_commandSystem->GetCommandBuffer(m_currentFrame).begin(&beginInfo);
+	TempCamera->UpdateView();
+	CameraData camera_data = {TempCamera->GetViewMatrix(), TempCamera->GetProjectionMatrix()};
 
+	m_camera->Update(&m_commandSystem->GetCommandBuffer(m_currentFrame), camera_data);
 	std::array<vk::ClearValue, 2> clearValues{};
 	clearValues[0].color = {  0.1f, 0.1f, 0.1f, 1.0f  };
 	clearValues[1].depthStencil = vk::ClearDepthStencilValue( 1.0f, 0 );

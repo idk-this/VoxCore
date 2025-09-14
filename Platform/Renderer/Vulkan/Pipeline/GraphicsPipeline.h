@@ -36,6 +36,7 @@ public:
     GraphicsPipeline* SetPushConstantRange(vk::ShaderStageFlags stages, uint32_t offset, uint32_t size);
     GraphicsPipeline* SetDescriptorSetLayouts(const std::vector<vk::DescriptorSetLayout>& layouts);
     vk::Pipeline& GetHandle() { return m_pipeline; }
+    void BindDescriptorSet(vk::CommandBuffer* cmd, vk::DescriptorSet descriptorSet);
 
 private:
 

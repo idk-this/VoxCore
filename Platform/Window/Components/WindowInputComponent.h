@@ -25,7 +25,7 @@ public:
     const MouseState& GetMouseState() const { return m_mouse; }
 
     void UpdateKeyState(KeyCode key, bool pressed);
-    void UpdateMouseMotion(int x, int y);
+    void UpdateMouseMotion(int x, int y, int dx, int dy);
     void SetMouseButtonState(int button, bool pressed);
 private:
     std::unordered_map<KeyCode, KeyState> m_keyStates;

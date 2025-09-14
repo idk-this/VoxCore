@@ -3,9 +3,40 @@
 //
 
 #pragma once
+#include "vulkan/vulkan.hpp"
 
+#include "Core/Export.h"
 
+class LogicalDevice;
+class PhysicalDevice;
 
-class VulkanBuffer {
+class VOXCORE_API VulkanBuffer {
 
+public:
+    VulkanBuffer(LogicalDevice* logicalDevice, PhysicalDevice* physicalDevice);
+    ~VulkanBuffer();
+    bool Create(vk::DescriptorSetLayout layout, vk::DescriptorPool pool, vk::DeviceSize size, vk::BufferUsageFlags usage, uint32_t binding);
+    void Destroy();
+    uint32_t FindMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
+
+    template<typename T>
+    void UpdateBufferData(const T& data);
+
+    vk::DescriptorSet GetDescriptorSet() const {return m_descriptorSet; }
+
+private:
+    LogicalDevice* m_logicalDevice;
+    PhysicalDevice* m_physicalDevice;
+    vk::Buffer m_buffer;
+    vk::DeviceMemory m_memory;
+    vk::DescriptorBufferInfo m_bufferInfo;
+    vk::DescriptorSet m_descriptorSet;
 };
+
+template <typename T>
+void VulkanBuffer::UpdateBufferData(const T& data)
+{
+    void* mapped = m_logicalDevice->GetHandle().mapMemory(m_memory, 0, sizeof(T));
+    std::memcpy(mapped, &data, sizeof(T));
+    m_logicalDevice->GetHandle().unmapMemory(m_memory);
+}
