@@ -8,7 +8,7 @@
 #include "Core/Log/Logger.h"
 #include "Platform/Renderer/Vulkan/RenderPass/VulkanRenderPass.h"
 
-CONVAR("r_vsync_enabled", true, "Enable or disable VSync for the Vulkan swapchain", CVAR_RUNTIME_ONLY);
+DECLARE_CONVAR("r_vsync_enabled", false, "Enable or disable VSync for the Vulkan swapchain", CVAR_RUNTIME_ONLY | CVAR_ARCHIVE);
 
 VulkanSwapChain::VulkanSwapChain(VulkanInstance *instance, PhysicalDevice* physicalDevice, LogicalDevice* logicalDevice) :
     m_vulkanInstance(instance), m_physicalDevice(physicalDevice), m_logicalDevice(logicalDevice) {

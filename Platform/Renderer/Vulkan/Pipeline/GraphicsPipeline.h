@@ -37,6 +37,7 @@ public:
     GraphicsPipeline* SetDescriptorSetLayouts(const std::vector<vk::DescriptorSetLayout>& layouts);
     vk::Pipeline& GetHandle() { return m_pipeline; }
     void BindDescriptorSet(vk::CommandBuffer* cmd, vk::DescriptorSet descriptorSet);
+    vk::PipelineLayout& GetLayout() { return m_pipelineLayout; }
 
 private:
 

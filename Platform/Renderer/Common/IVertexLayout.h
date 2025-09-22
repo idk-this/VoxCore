@@ -4,6 +4,12 @@
 
 #pragma once
 
+struct InstanceData {
+    glm::mat4 model;
+    glm::vec3 color;
+    float padding;
+};
+
 class IVertexLayout {
 public:
     virtual ~IVertexLayout() = default;

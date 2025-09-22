@@ -8,12 +8,6 @@
 #include <cstdint>
 #include <array>
 
-#include "Core/CVar/CVar.h"
-
-CONVAR("w_title", "VoxCore base", "Game window title", CVAR_RUNTIME_ONLY);
-CONVAR_MINMAX("w_size_width", 1920, "Game window width", CVAR_ARCHIVE, 320, 15360);
-CONVAR_MINMAX("w_size_height", 1080, "Game window height", CVAR_ARCHIVE, 240, 8640);
-
 class WindowInputComponent;
 
 class IWindow {
@@ -39,6 +33,6 @@ public:
 protected:
     WindowInputComponent *inputComponent = nullptr;
 private:
-    uint32_t m_width;
-    uint32_t m_height;
+    uint32_t m_width = 0;
+    uint32_t m_height = 0;
 };

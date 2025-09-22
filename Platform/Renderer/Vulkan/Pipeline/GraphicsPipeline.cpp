@@ -13,7 +13,6 @@
 #include "Platform/Renderer/Vulkan/Devices/LogicalDevice.h"
 #include "Platform/Renderer/Vulkan/Devices/PhysicalDevice.h"
 #include "Platform/Renderer/Vulkan/RenderPass/VulkanRenderPass.h"
-#include "Platform/Renderer/Vulkan/Camera.h"
 #include "Platform/Renderer/Vulkan/VulkanRenderer.h"
 #include "Core/Log/Logger.h"
 #include "Platform/Renderer/Common/IShader.h"
@@ -47,10 +46,10 @@ bool GraphicsPipeline::Init() {
     auto* attrs = static_cast<vk::VertexInputAttributeDescription*>(layout->getNativeAttributeDescriptions());
 
     vk::PipelineVertexInputStateCreateInfo vertexInputInfo(
-        {},
-        1, binding,
-        1, attrs
-    );
+    {},
+    static_cast<uint32_t>(layout->bindingDescs.size()), binding,
+    static_cast<uint32_t>(layout->attributeDescs.size()), attrs
+);
     vk::PipelineInputAssemblyStateCreateInfo inputAssembly({}, vk::PrimitiveTopology::eTriangleList);
 
     vk::Viewport viewport(0, 0, (float)m_swapChain->GetSwapExtent().width, (float)m_swapChain->GetSwapExtent().height, 0, 1);

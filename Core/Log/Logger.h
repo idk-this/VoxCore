@@ -11,6 +11,7 @@
 #include <iomanip>
 #include <source_location>
 #include "Core/Export.h"
+#include "Application/Application.h"
 
 enum class LogLevel {
     Info,
@@ -24,15 +25,14 @@ struct ChannelConfig {
 };
 class VOXCORE_API Logger {
 public:
-    static Logger& instance();
     void add_output(const std::string& channel, std::ostream& os, bool use_colors = true) {
-        std::lock_guard lock(mutex_);
+        std::lock_guard<std::mutex> lock(mutex_);
         channels_[channel].outputs.push_back(&os);
         channels_[channel].use_colors = use_colors;
     }
 
     void add_file_output(const std::string& channel, const std::string& filename) {
-        std::lock_guard lock(mutex_);
+        std::lock_guard<std::mutex> lock(mutex_);
         auto& files = file_streams_[channel];
         files.emplace_back(filename, std::ios::app);
         if (files.back().is_open()) {
@@ -47,7 +47,7 @@ public:
              const std::source_location& loc,
              std::format_string<Args...> fmt,
              Args&&... args) {
-        std::lock_guard lock(mutex_);
+        std::lock_guard<std::mutex> lock(mutex_);
 
         const auto now = std::chrono::system_clock::now();
         const auto now_time = std::chrono::system_clock::to_time_t(now);
@@ -128,7 +128,7 @@ public:
         }
     }
 
-private:
+public:
     Logger() = default;
     ~Logger() {
         for (auto& [_, files] : file_streams_) {
@@ -144,13 +144,13 @@ private:
 };
 
 #define LOG_INFO(channel, fmt, ...) \
-Logger::instance().log(LogLevel::Info, channel, std::source_location::current(), fmt, ##__VA_ARGS__)
+Engine::Application::Get()->GetLogSystem().log(LogLevel::Info, channel, std::source_location::current(), fmt, ##__VA_ARGS__)
 
 #define LOG_WARN(channel, fmt, ...) \
-Logger::instance().log(LogLevel::Warn, channel, std::source_location::current(), fmt, ##__VA_ARGS__)
+Engine::Application::Get()->GetLogSystem().log(LogLevel::Warn, channel, std::source_location::current(), fmt, ##__VA_ARGS__)
 
 #define LOG_ERROR(channel, fmt, ...) \
-Logger::instance().log(LogLevel::Error, channel, std::source_location::current(), fmt, ##__VA_ARGS__)
+Engine::Application::Get()->GetLogSystem().log(LogLevel::Error, channel, std::source_location::current(), fmt, ##__VA_ARGS__)
 
 #define LOG_FATAL(channel, fmt, ...) \
-Logger::instance().log(LogLevel::Fatal, channel, std::source_location::current(), fmt, ##__VA_ARGS__)
+Engine::Application::Get()->GetLogSystem().log(LogLevel::Fatal, channel, std::source_location::current(), fmt, ##__VA_ARGS__)

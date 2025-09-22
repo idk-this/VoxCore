@@ -15,53 +15,99 @@
 #include "../Core/CVar/CVar.h"
 #include "../Core/Log/Logger.h"
 #include "Core/ECS/BaseClasses/UWorld.h"
+#include "Core/ECS/Components/UCameraComponent.h"
 #include "Core/ECS/Components/UTransformComponent.h"
 #include "Core/ECS/Components/UMeshComponent.h"
 #include "Core/Utils/FileSystem.h"
 #include "Platform/Window/Components/WindowInputComponent.h"
 
 using namespace Engine;
+Engine::Application* Engine::Application::m_instance = nullptr;
 
 
-Application::Application() = default;
+Application::Application()
+{
+    m_cvar = std::make_unique<CVarManager>(CVarRegistry::Instance().GetDeclarations());
+    m_logSystem = std::make_unique<Logger>();
+    m_instance = this;
 
+};
+
+class LocalPlayer : public AActor {
+    UCLASS(LocalPlayer);
+public:
+    LocalPlayer() {
+        AddComponent(std::make_shared<UTransformComponent>());
+        AddComponent(std::make_shared<UCameraComponent>());
+    }
+};
 class TestCube : public AActor {
     UCLASS(TestCube);
 public:
     TestCube() {
         AddComponent(std::make_shared<UTransformComponent>());
         auto mesh = std::make_shared<UMeshComponent>();
-        mesh->SetWeirdMesh();
+        mesh->SetCubeMesh();
         AddComponent(mesh);
     }
 };
-
 Application::~Application() = default;
+
+Application* Application::Get()
+{
+    return m_instance;
+}
 
 void Application::Run() {
 
 }
-
+std::shared_ptr<LocalPlayer> testPlayer;
 void Application::Init() {
-    CVarManager::Instance().LoadFromFile(FileSystem::GetWorkingDirectory() + "/Config/CVars.cfg");
+    //CVarManager::Instance().LoadFromFile(FileSystem::GetWorkingDirectory() + "/Config/CVars.cfg");
+    glm::vec3 offset = glm::vec3(1.0f, 3.0f, 2.0f);
+
+    for (int x = 0; x < 3; ++x) {
+        for (int y = 0; y < 3; ++y) {
+            for (int z = 0; z < 3; ++z) {
+                auto cube = m_world->SpawnActor<TestCube>();
+                glm::vec3 pos = glm::vec3(x, y, z) * 2.0f - offset;
+                cube->GetComponent<UTransformComponent>()->SetPosition(pos);
+            }
+        }
+    }
+
 }
 
 // Updates application state (every frame)
 void Application::Update(float dt) {
     VulkanRenderer* vkRenderer = GetVulkanRenderer();
     if (!vkRenderer) return;
-    Camera* camera = vkRenderer->GetCamera();
-    if (!camera) return;
+    if (!testPlayer)
+    {
+        testPlayer = m_world->SpawnActor<LocalPlayer>();
+    }
 
     float moveSpeed = (window->GetInputComponent()->IsKeyDown(KeyCode::KEY_LEFT_SHIFT) ? 8.0f : 3.0f) * dt;
     glm::vec3 move(0.0f);
-    if (window->GetInputComponent()->IsKeyDown(KeyCode::KEY_W)) move.z += moveSpeed;
-    if (window->GetInputComponent()->IsKeyDown(KeyCode::KEY_S)) move.z -= moveSpeed;
-    if (window->GetInputComponent()->IsKeyDown(KeyCode::KEY_A)) move.x -= moveSpeed;
-    if (window->GetInputComponent()->IsKeyDown(KeyCode::KEY_D)) move.x += moveSpeed;
-    if (window->GetInputComponent()->IsKeyDown(KeyCode::KEY_SPACE)) move.y += moveSpeed;
-    if (window->GetInputComponent()->IsKeyDown(KeyCode::KEY_LEFT_CONTROL)) move.y -= moveSpeed;
-    if (glm::length(move) > 0.0f) camera->Move(move);
+    auto* transform = testPlayer->GetComponent<UTransformComponent>();
+
+    if (window->GetInputComponent()->IsKeyDown(KeyCode::KEY_W))
+        transform->Move(transform->GetForwardVector() * moveSpeed);
+
+    if (window->GetInputComponent()->IsKeyDown(KeyCode::KEY_S))
+        transform->Move(-transform->GetForwardVector() * moveSpeed);
+
+    if (window->GetInputComponent()->IsKeyDown(KeyCode::KEY_D))
+        transform->Move(transform->GetRightVector() * moveSpeed);
+
+    if (window->GetInputComponent()->IsKeyDown(KeyCode::KEY_A))
+        transform->Move(-transform->GetRightVector() * moveSpeed);
+
+    if (window->GetInputComponent()->IsKeyDown(KeyCode::KEY_SPACE))
+        transform->Move(transform->GetUpVector() * moveSpeed);
+
+    if (window->GetInputComponent()->IsKeyDown(KeyCode::KEY_LEFT_CONTROL))
+        transform->Move(-transform->GetUpVector() * moveSpeed);
 
     static bool mouseCaptured = false;
     static bool lastRightButton = false;
@@ -74,7 +120,13 @@ void Application::Update(float dt) {
 
     if (mouseCaptured) {
         float sensitivity = 0.52f;
-        camera->Rotate(window->GetInputComponent()->GetMouseState().deltaX * sensitivity, -window->GetInputComponent()->GetMouseState().deltaY * sensitivity);
+        auto* camera = testPlayer->GetComponent<UCameraComponent>();
+
+        camera->yaw += window->GetInputComponent()->GetMouseState().deltaX * sensitivity;
+        camera->pitch -= window->GetInputComponent()->GetMouseState().deltaY * sensitivity;
+
+        // Обновляем rotation трансформа
+        testPlayer->GetComponent<UTransformComponent>()->SetRotationYawPitch(camera->yaw, camera->pitch);
     }
 
 }
@@ -91,7 +143,7 @@ void Application::MainLoop() {
 
     glm::vec3 offset = glm::vec3(1.0f, 3.0f, 2.0f);
 
-    for (int x = 0; x < 3; ++x) {
+    /*for (int x = 0; x < 3; ++x) {
         for (int y = 0; y < 3; ++y) {
             for (int z = 0; z < 3; ++z) {
                 auto cube = m_world->SpawnActor<TestCube>();
@@ -99,7 +151,7 @@ void Application::MainLoop() {
                 cube->GetComponent<UTransformComponent>()->SetPosition(pos);
             }
         }
-    }
+    }*/
     while (!window->ShouldClose()) {
         auto now = std::chrono::high_resolution_clock::now();
         float dt = std::chrono::duration<float>(now - lastTime).count();

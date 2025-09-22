@@ -12,7 +12,7 @@
 #include "Core/Utils/FileSystem.h"
 namespace fs = std::filesystem;
 
-CONVAR("sv_allow_modding", false, "Allow loading files directly from the filesystem instead of using packed assets", CVAR_READONLY);
+DECLARE_CONVAR("sv_allow_modding", false, "Allow loading files directly from the filesystem instead of using packed assets", CVAR_READONLY);
 
 
 bool VoxPak::Open(const std::string& pakFile) {

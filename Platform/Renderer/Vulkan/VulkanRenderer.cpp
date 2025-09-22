@@ -16,14 +16,18 @@
 #include "Pipeline/GraphicsPipeline.h"
 #include "RenderPass/VulkanRenderPass.h"
 #include "Swapchain/VulkanSwapChain.h"
-#include "Camera.h"
 #include "Core/ECS/BaseClasses/UWorld.h"
 #include "Core/ECS/Components/UTransformComponent.h"
 #include "Core/ECS/Components/UMeshComponent.h"
 #include <unordered_map>
-#include "Core/Utils/FileSystem.h"
 
-CONVAR("r_max_frames_in_flight", 2, "Maximum number of frames in flight for swapchain", CVAR_RUNTIME_ONLY);
+#include "Core/Common/Vertex.h"
+#include "Core/ECS/Components/UCameraComponent.h"
+#include "Core/Utils/FileSystem.h"
+#include "Platform/Renderer/Common/IVertexLayout.h"
+#include "Application/Application.h"
+
+DECLARE_CONVAR_MINMAX("r_max_frames_in_flight", 2, 1, 4, "Maximum number of frames in flight for swapchain", CVAR_ARCHIVE);
 
 
 VulkanRenderer::VulkanRenderer()
@@ -41,14 +45,8 @@ VulkanRenderer::VulkanRenderer()
 	{
 		LOG_FATAL("Vulkan", "Failed to open VulkanShaders.voxpak");
 	}
-	TempCamera = new Camera(glm::vec3(1.0f, 0.0f, 3.0f), // position
-		-90.0f, // yaw (смотрим вдоль -Z)
-		0.0f, // pitch
-		90.0f, // fov
-		16.0f / 9.0f, // aspect ratio (например, 1920/1080)
-		0.1f, // near plane
-		100.0f);
-	m_camera = std::make_unique<VulkanCameraUBO>(m_logicalDevice.get(), m_physicalDevice.get());
+
+	m_cameraUBO = std::make_unique<VulkanCameraUBO>(m_logicalDevice.get(), m_physicalDevice.get());
 
 } ;
 VulkanRenderer::~VulkanRenderer() {
@@ -78,9 +76,9 @@ bool VulkanRenderer::Init(IWindow *window, UWorld* world) {
 
 	m_graphicsPipeline->SetShader(vulkanShader);
 
-	m_camera->PreInit(m_graphicsPipeline.get());
 
-	m_graphicsPipeline->SetDescriptorSetLayouts({m_camera->GetDescriptorSetLayout()});
+    m_cameraUBO->PreInit(m_graphicsPipeline.get());
+	m_graphicsPipeline->SetDescriptorSetLayouts({m_cameraUBO->GetDescriptorSetLayout()});
 
 	m_graphicsPipeline->Init();
 	m_swapchain->CreateFramebuffers(m_renderPass.get());
@@ -88,7 +86,7 @@ bool VulkanRenderer::Init(IWindow *window, UWorld* world) {
 		return false;
 	}
 
-	m_camera->Init();
+	m_cameraUBO->Init();
 	m_imageAvailableSemaphores.resize(GET_CVAR(int, "r_max_frames_in_flight"));
 	m_renderFinishedSemaphores.resize(m_swapchain->GetImageCount());
 	m_inFlightFences.resize(GET_CVAR(int, "r_max_frames_in_flight"));
@@ -99,12 +97,13 @@ bool VulkanRenderer::Init(IWindow *window, UWorld* world) {
 	for (uint32_t i = 0; i < m_swapchain->GetImageCount(); ++i) {
 		m_renderFinishedSemaphores[i] = m_logicalDevice->GetHandle().createSemaphore({});
 	}
+	m_world = world;
 	return true;
 }
 
 void VulkanRenderer::BeginFrame() {
 	m_logicalDevice->GetHandle().waitForFences(m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
-	vk::PipelineStageFlags waitStage = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+
 	m_swapchain->BeginRender(m_imageAvailableSemaphores[m_currentFrame]);
 	m_logicalDevice->GetHandle().resetFences(m_inFlightFences[m_currentFrame]);
 	m_commandSystem->GetCommandBuffer(m_currentFrame).reset();
@@ -112,12 +111,23 @@ void VulkanRenderer::BeginFrame() {
 
 void VulkanRenderer::ProcessRender() {
 	vk::CommandBufferBeginInfo beginInfo{};
+	m_commandSystem->GetCommandBuffer(m_currentFrame).begin(beginInfo);
+	UCameraComponent* camera = nullptr;
+	if (m_world->GetActors().size() > 0)
+		camera = m_world->GetActors()[0]->GetComponent<UCameraComponent>();
+	if (camera)
+	{
+		glm::mat4 viewMatrix = camera->GetViewMatrix();
+		glm::mat4 projectionMatrix = camera->GetProjectionMatrix();
 
-	m_commandSystem->GetCommandBuffer(m_currentFrame).begin(&beginInfo);
-	TempCamera->UpdateView();
-	CameraData camera_data = {TempCamera->GetViewMatrix(), TempCamera->GetProjectionMatrix()};
+		CameraData camera_data = {
+			viewMatrix,
+			projectionMatrix
+		};
 
-	m_camera->Update(&m_commandSystem->GetCommandBuffer(m_currentFrame), camera_data);
+		m_cameraUBO->Update(&m_commandSystem->GetCommandBuffer(m_currentFrame), camera_data);
+	}
+
 	std::array<vk::ClearValue, 2> clearValues{};
 	clearValues[0].color = {  0.1f, 0.1f, 0.1f, 1.0f  };
 	clearValues[1].depthStencil = vk::ClearDepthStencilValue( 1.0f, 0 );
@@ -134,8 +144,46 @@ void VulkanRenderer::ProcessRender() {
 	m_commandSystem->GetCommandBuffer(m_currentFrame).bindPipeline(vk::PipelineBindPoint::eGraphics, m_graphicsPipeline->GetHandle());
 
 
-	m_commandSystem->GetCommandBuffer(m_currentFrame).draw(96, 1, 0, 0);
+	// --- Отрисовка всех UMeshComponent ---
+	if (m_world) {
 
+		auto actors = m_world->GetActors();
+		for (auto actor : actors) {
+			auto mesh = actor->GetComponent<UMeshComponent>();
+			if (!mesh) continue;
+
+			// Если ещё нет GPU данных для этого меша
+			if (m_meshDataMap.find(mesh) == m_meshDataMap.end()) {
+				// Собираем всех акторов с этим мешем
+				std::vector<AActor*> meshActors;
+				for (auto a : actors) {
+					if (a->GetComponent<UMeshComponent>() == mesh)
+						meshActors.push_back(a.get());
+				}
+				PrepareMesh(mesh, meshActors);
+			}
+		}
+		for (auto& [mesh, data] : m_meshDataMap) {
+			std::vector<AActor*> meshActors;
+			for (auto actor : actors) {
+				if (actor->GetComponent<UMeshComponent>() == mesh)
+					meshActors.push_back(actor.get());
+			}
+			if (meshActors.empty()) continue;
+
+			// Update instance buffer per frame
+			UpdateInstanceBuffer(mesh, meshActors);
+
+			vk::Buffer buffers[] = { data.vertexBuffer.GetBuffer(), data.instanceBuffer.GetBuffer() };
+			vk::DeviceSize offsets[] = {0,0};
+			m_commandSystem->GetCommandBuffer(m_currentFrame).bindVertexBuffers(0, 2, buffers, offsets);
+			m_commandSystem->GetCommandBuffer(m_currentFrame).bindIndexBuffer(data.indexBuffer.GetBuffer(), 0, vk::IndexType::eUint32);
+			m_commandSystem->GetCommandBuffer(m_currentFrame).bindDescriptorSets(
+				vk::PipelineBindPoint::eGraphics, m_graphicsPipeline->GetLayout(), 0, 1,
+				&m_cameraUBO->GetDescriptorSet(), 0, nullptr);
+			m_commandSystem->GetCommandBuffer(m_currentFrame).drawIndexed(data.indexCount, static_cast<uint32_t>(meshActors.size()), 0, 0, 0);
+		}
+	}
 	m_commandSystem->GetCommandBuffer(m_currentFrame).endRenderPass();
 	m_commandSystem->GetCommandBuffer(m_currentFrame).end();
 }
@@ -156,6 +204,59 @@ void VulkanRenderer::EndFrame() {
 	m_logicalDevice->GetGraphicsQueue().submit(submitInfo, m_inFlightFences[m_currentFrame]);
 	m_swapchain->Present(m_renderFinishedSemaphores[m_swapchain->GetCurrentImageIndex()]);
 	m_currentFrame = (m_currentFrame + 1) % GET_CVAR(int, "r_max_frames_in_flight");
+}
+
+void VulkanRenderer::PrepareMesh(UMeshComponent* mesh, const std::vector<AActor*>& actors)
+{
+	// Vertex buffer
+	std::vector<Vertex> vertices;
+	for (size_t i = 0; i < mesh->vertices.size(); ++i) {
+		glm::vec3 color = (i < mesh->colors.size()) ? mesh->colors[i] : glm::vec3(1.0f);
+		vertices.push_back({ mesh->vertices[i], color });
+	}
+
+	MeshRenderData data(m_logicalDevice.get(), m_physicalDevice.get());
+	data.indexCount = static_cast<uint32_t>(mesh->indices.size());
+	data.instanceCount = static_cast<uint32_t>(actors.size());
+
+	data.vertexBuffer.Create(sizeof(Vertex) * vertices.size(), vk::BufferUsageFlagBits::eVertexBuffer);
+	data.vertexBuffer.UpdateBufferDataArray(vertices);
+
+	data.indexBuffer.Create(sizeof(uint32_t) * mesh->indices.size(), vk::BufferUsageFlagBits::eIndexBuffer);
+	data.indexBuffer.UpdateBufferDataArray(mesh->indices);
+
+	std::vector<InstanceData> instances;
+	for (auto* actor : actors) {
+		InstanceData inst{};
+		auto transform = actor->GetComponent<UTransformComponent>();
+		inst.model = transform ? transform->GetTransformMatrix() : glm::mat4(1.0f);
+		inst.color = glm::vec3(1.0f);
+		inst.padding = 0.0f;
+		instances.push_back(inst);
+	}
+
+	data.instanceBuffer.Create(sizeof(InstanceData) * instances.size(), vk::BufferUsageFlagBits::eVertexBuffer);
+	data.instanceBuffer.UpdateBufferDataArray(instances);
+
+	m_meshDataMap.emplace(mesh, std::move(data));
+}
+void VulkanRenderer::UpdateInstanceBuffer(UMeshComponent* mesh, const std::vector<AActor*>& actors)
+{
+	auto it = m_meshDataMap.find(mesh);
+	if (it == m_meshDataMap.end()) return;
+
+	std::vector<InstanceData> instances;
+	for (auto* actor : actors) {
+		InstanceData inst{};
+		auto transform = actor->GetComponent<UTransformComponent>();
+		inst.model = transform ? transform->GetTransformMatrix() : glm::mat4(1.0f);
+		inst.color = glm::vec3(1.0f);
+		inst.padding = 0.0f;
+		instances.push_back(inst);
+	}
+
+	it->second.instanceBuffer.UpdateBufferDataArray(instances);
+	it->second.instanceCount = static_cast<uint32_t>(instances.size());
 }
 
 void VulkanRenderer::Cleanup() {

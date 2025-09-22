@@ -13,7 +13,6 @@
 #include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
 
-#include "Camera.h"
 #include "Core/VulkanInstance.h"
 #include "Common/VulkanCameraUBO.h"
 #include "Pipeline/GraphicsPipeline.h"
@@ -21,6 +20,8 @@
 #include "Core/Common/VoxPak.h"
 
 
+class AActor;
+class UMeshComponent;
 class VulkanCommandSystem;
 class TrianglePipeline;
 class CommandSystem;
@@ -31,6 +32,24 @@ class LogicalDevice;
 class PhysicalDevice;
 class IUISystem;
 
+struct MeshRenderData {
+    MeshRenderData(LogicalDevice* logicalDevice, PhysicalDevice* physicalDevice): vertexBuffer(logicalDevice, physicalDevice),
+    indexBuffer(logicalDevice, physicalDevice), instanceBuffer(logicalDevice, physicalDevice)
+    {
+
+    }
+    MeshRenderData(const MeshRenderData&) = delete;
+    MeshRenderData& operator=(const MeshRenderData&) = delete;
+    MeshRenderData(MeshRenderData&&) = default;
+    MeshRenderData& operator=(MeshRenderData&&) = default;
+    ~MeshRenderData() = default;
+    VulkanBuffer vertexBuffer;
+    VulkanBuffer indexBuffer;
+    VulkanBuffer instanceBuffer;
+    uint32_t indexCount = 0;
+    uint32_t instanceCount = 0;
+};
+
 class VOXCORE_API VulkanRenderer : public IRenderer {
 public:
     VulkanRenderer();
@@ -39,9 +58,9 @@ public:
     void BeginFrame() override;
     void ProcessRender();
     void EndFrame() override;
-    Camera* TempCamera;
-    Camera* GetCamera() { return TempCamera; }
     uint32_t GetCurrentFrame() const { return m_currentFrame; }
+    void PrepareMesh(UMeshComponent* mesh, const std::vector<AActor*>& actors);
+    void UpdateInstanceBuffer(UMeshComponent* mesh, const std::vector<AActor*>& actors);
 
     [[nodiscard]] const std::unique_ptr<VulkanInstance>& GetInstance() const { return m_instance; }
     [[nodiscard]] const std::unique_ptr<PhysicalDevice>& GetPhysicalDevice() const { return m_physicalDevice; }
@@ -60,7 +79,9 @@ private:
     std::unique_ptr<VulkanRenderPass> m_renderPass;
     std::unique_ptr<GraphicsPipeline> m_graphicsPipeline;
     std::unique_ptr<VulkanCommandSystem> m_commandSystem;
-    std::unique_ptr<VulkanCameraUBO> m_camera;
+    std::unique_ptr<VulkanCameraUBO> m_cameraUBO;
+
+    std::unordered_map<UMeshComponent*, MeshRenderData> m_meshDataMap;
 
     VoxPak m_shaderPak;
 

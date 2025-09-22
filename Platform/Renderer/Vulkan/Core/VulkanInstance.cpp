@@ -15,7 +15,7 @@ VulkanInstance::VulkanInstance() {
     m_appInfo.applicationVersion = VK_MAKE_VERSION(0, 0, 1);		// Custom version of the application
     m_appInfo.pEngineName = "VoxCore";							// Custom engine name
     m_appInfo.engineVersion = VK_MAKE_VERSION(0, 0, 1);			// Custom engine version
-    m_appInfo.apiVersion = VK_API_VERSION_1_4;					// The Vulkan Version
+    m_appInfo.apiVersion = VK_API_VERSION_1_3;					// The Vulkan Version
 
     m_instance = nullptr;
 }
@@ -43,9 +43,10 @@ bool VulkanInstance::Init() {
         return false;
     }
     std::vector<const char*> extensions(exts, exts + extCount);
-
-
+    extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    extensions.push_back("VK_KHR_portability_enumeration");
     vk::InstanceCreateInfo instanceInfo({}, &m_appInfo);
+
     instanceInfo.flags |= vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR;
     instanceInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
     instanceInfo.ppEnabledExtensionNames = extensions.data();

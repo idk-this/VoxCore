@@ -38,6 +38,26 @@ bool VulkanBuffer::Create(vk::DescriptorSetLayout layout, vk::DescriptorPool poo
     return true;
 }
 
+bool VulkanBuffer::Create(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties)
+{
+    vk::BufferCreateInfo bufferInfo{};
+    bufferInfo.size = size;
+    bufferInfo.usage = usage;
+    bufferInfo.sharingMode = vk::SharingMode::eExclusive;
+
+    m_buffer = m_logicalDevice->GetHandle().createBuffer(bufferInfo);
+
+    vk::MemoryRequirements memRequirements = m_logicalDevice->GetHandle().getBufferMemoryRequirements(m_buffer);
+    vk::MemoryAllocateInfo allocInfo{};
+    allocInfo.allocationSize = memRequirements.size;
+    allocInfo.memoryTypeIndex = FindMemoryType(memRequirements.memoryTypeBits, properties);
+
+    m_memory = m_logicalDevice->GetHandle().allocateMemory(allocInfo);
+    m_logicalDevice->GetHandle().bindBufferMemory(m_buffer, m_memory, 0);
+
+    return true;
+}
+
 uint32_t VulkanBuffer::FindMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties)
 {
     auto memProperties = m_physicalDevice->GetHandle().getMemoryProperties();
@@ -48,4 +68,10 @@ uint32_t VulkanBuffer::FindMemoryType(uint32_t typeFilter, vk::MemoryPropertyFla
     }
     LOG_ERROR("Vulkan", "Failed to find suitable memory type!");
     return -1;
+}
+
+void VulkanBuffer::BindBuffer(vk::CommandBuffer* cmd)
+{
+    VkDeviceSize offset = 0;
+    cmd->bindVertexBuffers(0, 1, &m_buffer, &offset);
 }

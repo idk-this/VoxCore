@@ -1,9 +1,11 @@
 #pragma once
 #include <memory>
 #include <string>
-#include "../Platform/Renderer/Vulkan/VulkanRenderer.h"
+#include "Platform/Renderer/Vulkan/VulkanRenderer.h"
 #include "Core/Export.h"
 
+class Logger;
+class CVarManager;
 class IWindow;
 class IRenderer;
 
@@ -17,13 +19,15 @@ namespace Engine {
     public:
         Application();
         virtual ~Application();
-
+        static Application* Get();
         // Starts the main application loop
         virtual void Run();
 
         VulkanRenderer* GetVulkanRenderer() {
             return dynamic_cast<VulkanRenderer*>(renderer.get());
         }
+        Logger& GetLogSystem() const { return *m_logSystem; }
+        CVarManager& GetCVar() const { return *m_cvar; }
 
     protected:
         // Initializes application resources
@@ -45,5 +49,11 @@ namespace Engine {
         std::shared_ptr<UWorld> m_world;
         std::string appName = "Engine Application";
         std::string appVersion = "1.0.0";
+
+
+    protected:
+        static Application* m_instance;
+        std::unique_ptr<Logger> m_logSystem;
+        std::unique_ptr<CVarManager> m_cvar;
     };
 }

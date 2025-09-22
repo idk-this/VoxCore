@@ -6,7 +6,7 @@
 #include <SDL3/SDL.h>
 #include <algorithm>
 #include <imgui.h>
-#include <imgui_impl_sdl3.h>
+
 
 #include "../../../Core/Log/Logger.h"
 #include "Platform/Window/Components/WindowInputComponent.h"
@@ -42,7 +42,7 @@ bool SDL3Window::Create(int width, int height, const std::string &title) {
     }
 
     inputComponent = new WindowInputComponent();
-    return true;
+
     return m_window != nullptr;
 }
 

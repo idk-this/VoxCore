@@ -1,77 +1,110 @@
-//
-// Created by IDKTHIS on 01.07.2025.
-//
-
 #ifndef CVAR_H
 #define CVAR_H
 
 #include <string>
-#include <unordered_map>
 #include <variant>
+#include <vector>
+#include <unordered_map>
 #include <functional>
-
-#include <mutex>
-#include <memory>
 #include <optional>
-
+#include <mutex>
 #include "Flags.h"
+#include "Application/Application.h"
 #include "Core/Export.h"
-using CVarValue = std::variant<int, float, bool, std::string>;
 
-struct VOXCORE_API ConVar {
+using CVarValue = std::variant<int, float, bool, std::string>;
+using CVarCallback = std::function<void(const CVarValue& oldValue, const CVarValue& newValue)>;
+
+
+class VOXCORE_API ConVar {
+public:
     std::string name;
     std::string description;
-    CVarValue value;
+    CVarValue defaultValue;
     int flags;
     std::optional<CVarValue> minValue;
     std::optional<CVarValue> maxValue;
 
     ConVar(const std::string& name, CVarValue defaultValue, const std::string& description, int flags,
            std::optional<CVarValue> min = std::nullopt, std::optional<CVarValue> max = std::nullopt);
+};
 
-    template<typename T>
-    T Get() const { return std::get<T>(value); }
+class VOXCORE_API CVarRegistry {
+public:
+    static CVarRegistry& Instance() {
+        static CVarRegistry inst;
+        return inst;
+    }
 
-    bool SetValue(const CVarValue& newValue); // Returns true if value was set
-    bool CheckConstraints(CVarValue newValue) const;
+    void RegisterDeclaration(const ConVar& def) {
+        declarations.push_back(def);
+    }
 
-    static void Register(ConVar* var);
+    const std::vector<ConVar>& GetDeclarations() const {
+        return declarations;
+    }
+
+private:
+    std::vector<ConVar> declarations;
+};
+
+struct VOXCORE_API ConVarInstance {
+    std::string name;
+    std::string description;
+    CVarValue value;
+    int flags;
+    std::optional<CVarValue> minValue;
+    std::optional<CVarValue> maxValue;
+    std::vector<CVarCallback> callbacks;
 };
 
 class VOXCORE_API CVarManager {
 public:
-    static CVarManager& Instance();
+    CVarManager(const std::vector<ConVar>& declaredVars);
 
-    void Register(ConVar* var);
-    ConVar* Get(const std::string& name);
+    void Set(const std::string& name, const CVarValue& val);
+    CVarValue Get(const std::string& name) const;
+    std::string GetDescription(const std::string& name) const;
+    ConVarInstance* Find(const std::string& name);
 
-    void Set(const std::string& name, CVarValue val);
-
-    bool IsReadOnly(const std::string& name);
-    void SaveToFile(const std::string& filename = "Config/CVars.txt");
-    void LoadFromFile(const std::string& filename = "Config/CVars.txt");
 private:
-    std::unordered_map<std::string, ConVar*> vars;
-    std::mutex mutex_;
+    std::unordered_map<std::string, ConVarInstance> vars;
+    mutable std::mutex mutex_;
 };
 
 #define CONCAT2(x, y) x##y
 #define CONCAT(x, y) CONCAT2(x, y)
-#define CONVAR(name, defaultVal, desc, flags) \
-static ConVar CONCAT(cvar_, __LINE__)(name, defaultVal, desc, flags)
+
+#define DECLARE_CONVAR(name, defaultVal, desc, flags) \
+static ConVar CONCAT(cvar_, __COUNTER__)(name, defaultVal, desc, flags)
+
+#define DECLARE_CONVAR_MINMAX(name, defaultVal, minVal, maxVal, desc, flags) \
+static ConVar CONCAT(cvar_, __COUNTER__)( \
+std::string(name), \
+CVarValue(defaultVal), \
+std::string(desc), \
+flags, \
+CVarValue(minVal), \
+CVarValue(maxVal))
+
+#define DECLARE_CVAR_CALLBACK(cvarName, func) \
+do { \
+    if (auto* var = Engine::Application::Get()->GetCVar().Find(cvarName)) { \
+        var->callbacks.push_back(func); \
+    } \
+} while(0)
+
 #define GET_CVAR(type, name) \
-(CVarManager::Instance().Get(name) ? std::get<type>(CVarManager::Instance().Get(name)->value) : type{})
+([]() -> type { \
+auto val = Engine::Application::Get()->GetCVar().Get(name); \
+if (std::holds_alternative<type>(val)) return std::get<type>(val); \
+return type{}; \
+}())
+
 #define GET_CVAR_DESC(name) \
-(CVarManager::Instance().Get(name) ? CVarManager::Instance().Get(name)->description : "")
-#define CONVAR(name, defaultVal, desc, flags) \
-static ConVar CONCAT(cvar_, __LINE__)(name, defaultVal, desc, flags)
-#define CONVAR_MINMAX(name, defaultVal, desc, flags, minVal, maxVal) \
-static ConVar CONCAT(cvar_, __LINE__)(name, defaultVal, desc, flags, minVal, maxVal)
+(Engine::Application::Get()->GetCVar().GetDescription(name))
+
 #define SET_CVAR(name, newVal) \
-    do { \
-        auto* var = CVarManager::Instance().Get(name); \
-        if (var) var->SetValue(newVal); \
-    } while (0)
+do { Engine::Application::Get()->GetCVar().Set(name, newVal); } while(0)
 
-
-#endif //CVAR_H
+#endif // CVAR_H
