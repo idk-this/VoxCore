@@ -3,7 +3,7 @@
 //
 
 #pragma once
-#include "Core/ECS/BaseClasses/UBaseComponent.h"
+#include "Core/ECS/Components/UBaseComponent.h""
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>

@@ -6,7 +6,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 
-#include "../BaseClasses/UBaseComponent.h"
+#include "Core/ECS/Components/UBaseComponent.h"
 
 
 class UTransformComponent;

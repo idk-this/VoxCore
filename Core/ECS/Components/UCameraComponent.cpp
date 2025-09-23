@@ -5,7 +5,7 @@
 #include "UCameraComponent.h"
 
 #include "UTransformComponent.h"
-#include "Core/ECS/BaseClasses/AActor.h"
+#include "Core/ECS/Base/AActor.h"
 
 
 glm::mat4 UCameraComponent::GetViewMatrix() const

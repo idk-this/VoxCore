@@ -1,6 +1,6 @@
 // Created by IDKTHIS on 17.07.2025
 #pragma once
-#include "Core/ECS/BaseClasses/UBaseComponent.h"
+#include "Core/ECS/Components/UBaseComponent.h"
 #include <vector>
 #include <random>
 #include <glm/glm.hpp>
@@ -14,7 +14,7 @@ public:
     std::vector<glm::vec3> colors;
 
     void SetCubeMesh() {
-        float size = 0.2f + static_cast<float>(std::rand()) / RAND_MAX * 0.8f;
+        float size = 1;
 
         vertices = {
             // -Z

@@ -14,7 +14,7 @@
 
 #include "../Core/CVar/CVar.h"
 #include "../Core/Log/Logger.h"
-#include "Core/ECS/BaseClasses/UWorld.h"
+#include "Core/ECS/Base/UWorld.h"
 #include "Core/ECS/Components/UCameraComponent.h"
 #include "Core/ECS/Components/UTransformComponent.h"
 #include "Core/ECS/Components/UMeshComponent.h"
@@ -65,7 +65,7 @@ std::shared_ptr<LocalPlayer> testPlayer;
 void Application::Init() {
     //CVarManager::Instance().LoadFromFile(FileSystem::GetWorkingDirectory() + "/Config/CVars.cfg");
     glm::vec3 offset = glm::vec3(1.0f, 3.0f, 2.0f);
-
+    testPlayer = m_world->SpawnActor<LocalPlayer>();
     for (int x = 0; x < 3; ++x) {
         for (int y = 0; y < 3; ++y) {
             for (int z = 0; z < 3; ++z) {
