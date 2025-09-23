@@ -4,6 +4,7 @@
 #include "Platform/Renderer/Vulkan/VulkanRenderer.h"
 #include "Core/Export.h"
 
+class ULocalPlayer;
 class Logger;
 class CVarManager;
 class IWindow;
@@ -28,7 +29,9 @@ namespace Engine {
         }
         Logger& GetLogSystem() const { return *m_logSystem; }
         CVarManager& GetCVar() const { return *m_cvar; }
-
+        std::shared_ptr<ULocalPlayer> GetLocalPlayer() const { return m_localPlayer; }
+        IWindow* GetWindow() const { return window.get(); }
+        UWorld* GetWorld() const { return m_world.get(); }
     protected:
         // Initializes application resources
         virtual void Init();
@@ -55,5 +58,10 @@ namespace Engine {
         static Application* m_instance;
         std::unique_ptr<Logger> m_logSystem;
         std::unique_ptr<CVarManager> m_cvar;
+        std::shared_ptr<ULocalPlayer> m_localPlayer;
     };
+
+    inline Application& GetCurrentContext() {
+        return *Application::Get();
+    }
 }

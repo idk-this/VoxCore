@@ -26,6 +26,9 @@
 #include "Core/Utils/FileSystem.h"
 #include "Platform/Renderer/Common/IVertexLayout.h"
 #include "Application/Application.h"
+#include "Core/ECS/Player/APawn.h"
+#include "Core/ECS/Player/APlayerController.h"
+#include "Core/ECS/Player/ULocalPlayer.h"
 
 DECLARE_CONVAR_MINMAX("r_max_frames_in_flight", 2, 1, 4, "Maximum number of frames in flight for swapchain", CVAR_ARCHIVE);
 
@@ -113,8 +116,8 @@ void VulkanRenderer::ProcessRender() {
 	vk::CommandBufferBeginInfo beginInfo{};
 	m_commandSystem->GetCommandBuffer(m_currentFrame).begin(beginInfo);
 	UCameraComponent* camera = nullptr;
-	if (m_world->GetActors().size() > 0)
-		camera = m_world->GetActors()[0]->GetComponent<UCameraComponent>();
+	camera = Engine::Application::Get()->GetLocalPlayer()->GetController()->GetPawn()->GetComponent<UCameraComponent>();
+
 	if (camera)
 	{
 		glm::mat4 viewMatrix = camera->GetViewMatrix();
@@ -208,6 +211,7 @@ void VulkanRenderer::EndFrame() {
 
 void VulkanRenderer::PrepareMesh(UMeshComponent* mesh, const std::vector<AActor*>& actors)
 {
+	if (mesh->vertices.empty()) return;
 	// Vertex buffer
 	std::vector<Vertex> vertices;
 	for (size_t i = 0; i < mesh->vertices.size(); ++i) {

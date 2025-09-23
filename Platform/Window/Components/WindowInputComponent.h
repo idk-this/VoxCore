@@ -9,13 +9,11 @@
 #include <vector>
 
 #include "Keys.h"
-#pragma once
-#include <unordered_map>
-#include <cstdint>
+
+#include "Core/Export.h"
 
 
-
-class WindowInputComponent {
+class VOXCORE_API WindowInputComponent {
 public:
     void BeginFrame();
     KeyState GetKeyState(KeyCode key) const;

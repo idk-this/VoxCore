@@ -3,15 +3,16 @@
 //
 
 #pragma once
-#include "Core/ECS/Components/UBaseComponent.h""
+#include "Core/ECS/Components/UBaseComponent.h"
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include "Core/Export.h"
 
 
-class UTransformComponent : public UBaseComponent {
+class VOXCORE_API UTransformComponent : public UBaseComponent {
 public:
     UCLASS(UTransformComponent);
     UTransformComponent()
