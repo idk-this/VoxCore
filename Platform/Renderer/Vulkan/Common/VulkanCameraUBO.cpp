@@ -20,7 +20,7 @@ bool VulkanCameraUBO::PreInit(GraphicsPipeline* pipeline)
     cameraLayoutBinding.binding = 0;
     cameraLayoutBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
     cameraLayoutBinding.descriptorCount = 1;
-    cameraLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eVertex;
+    cameraLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment;
     cameraLayoutBinding.pImmutableSamplers = nullptr;
     vk::DescriptorSetLayoutCreateInfo layoutInfo{{}, 1, &cameraLayoutBinding};
     m_cameraDescriptorSetLayout = m_logicalDevice->GetHandle().createDescriptorSetLayout(layoutInfo);

@@ -24,8 +24,8 @@ namespace Engine {
         // Starts the main application loop
         virtual void Run();
 
-        VulkanRenderer* GetVulkanRenderer() {
-            return dynamic_cast<VulkanRenderer*>(renderer.get());
+        IRenderer* GetRenderer() {
+            return renderer.get();
         }
         Logger& GetLogSystem() const { return *m_logSystem; }
         CVarManager& GetCVar() const { return *m_cvar; }

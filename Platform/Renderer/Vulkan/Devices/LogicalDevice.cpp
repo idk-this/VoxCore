@@ -7,9 +7,7 @@
 #include "PhysicalDevice.h"
 #include "Core/Log/Logger.h"
 
-LogicalDevice::LogicalDevice(VulkanInstance *instance) : m_vulkanInstance(instance) {
-    // Constructor implementation
-}
+
 
 LogicalDevice::~LogicalDevice() {
     if (m_logicalDevice) {
@@ -17,9 +15,9 @@ LogicalDevice::~LogicalDevice() {
     }
 }
 
-bool LogicalDevice::Init(PhysicalDevice* physicalDevice) {
-    uint32_t graphicsQueueFamily = physicalDevice->GetGraphicsQueueFamilyIndex();
-    uint32_t presentQueueFamily = physicalDevice->GetPresentQueueFamilyIndex();
+bool LogicalDevice::Init() {
+    uint32_t graphicsQueueFamily = m_context->physicalDevice->GetGraphicsQueueFamilyIndex();
+    uint32_t presentQueueFamily =  m_context->physicalDevice->GetPresentQueueFamilyIndex();
     bool sameQueueFamily = (graphicsQueueFamily == presentQueueFamily);
 
     float priority = 1.0f;
@@ -29,16 +27,20 @@ bool LogicalDevice::Init(PhysicalDevice* physicalDevice) {
     if (!sameQueueFamily) {
         queueInfos.emplace_back(vk::DeviceQueueCreateFlags{}, presentQueueFamily, 1, &priority);
     }
-
+    vk::PhysicalDeviceFeatures enabledFeatures{};
+    if (m_context->physicalDevice->GetSupportedFeatures().samplerAnisotropy) {
+        enabledFeatures.samplerAnisotropy = VK_TRUE;
+    }
     vk::DeviceCreateInfo deviceInfo(
         {},  static_cast<uint32_t>(queueInfos.size()), queueInfos.data(),
         0, nullptr,
         static_cast<uint32_t>(m_deviceExtensions.size()), m_deviceExtensions.data()
     );
-    m_logicalDevice = physicalDevice->GetHandle().createDevice(deviceInfo);
+    deviceInfo.pEnabledFeatures = &enabledFeatures;
+    m_logicalDevice =  m_context->physicalDevice->GetHandle().createDevice(deviceInfo);
     VULKAN_HPP_DEFAULT_DISPATCHER.init(m_logicalDevice);
-    m_graphicsQueue = m_logicalDevice.getQueue(physicalDevice->GetGraphicsQueueFamilyIndex(), 0);
-    m_presentQueue = m_logicalDevice.getQueue(physicalDevice->GetPresentQueueFamilyIndex(), 0);
+    m_graphicsQueue = m_logicalDevice.getQueue( m_context->physicalDevice->GetGraphicsQueueFamilyIndex(), 0);
+    m_presentQueue = m_logicalDevice.getQueue( m_context->physicalDevice->GetPresentQueueFamilyIndex(), 0);
     LOG_INFO("Vulkan", "Logical device created with {} extensions.", m_deviceExtensions.size());
     return true;
 }

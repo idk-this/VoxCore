@@ -11,21 +11,15 @@
 
 
 
-VulkanCommandSystem::VulkanCommandSystem(VulkanInstance *instance, LogicalDevice *logicalDevice,
-                                         VulkanRenderPass *renderPass, VulkanSwapChain *swapChain, GraphicsPipeline *graphicsPipeline) :
-    m_vulkanInstance(instance), m_logicalDevice(logicalDevice), m_renderPass(renderPass), m_swapChain(swapChain),
-    m_graphicsPipeline(graphicsPipeline)
-{
-}
 
-bool VulkanCommandSystem::Init(uint32_t graphicsQueueFamilyIndex) {
+bool VulkanCommandSystem::Init() {
     vk::CommandPoolCreateInfo poolInfo(
            vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
-           graphicsQueueFamilyIndex
+           m_context->physicalDevice->GetGraphicsQueueFamilyIndex()
        );
-    m_commandPool = m_logicalDevice->GetHandle().createCommandPool(poolInfo);
+    m_commandPool = m_context->logicalDevice->GetHandle().createCommandPool(poolInfo);
 
-    m_commandBuffers = m_logicalDevice->GetHandle().allocateCommandBuffers({
+    m_commandBuffers = m_context->logicalDevice->GetHandle().allocateCommandBuffers({
         m_commandPool, vk::CommandBufferLevel::ePrimary, static_cast<uint32_t>(GET_CVAR(int, "r_max_frames_in_flight"))
     });
 
@@ -34,14 +28,46 @@ bool VulkanCommandSystem::Init(uint32_t graphicsQueueFamilyIndex) {
 
 void VulkanCommandSystem::Cleanup() {
 
-    if (!m_commandBuffers.empty() && m_logicalDevice) {
-        m_logicalDevice->GetHandle().freeCommandBuffers(m_commandPool, m_commandBuffers);
+    if (!m_commandBuffers.empty() && m_context->logicalDevice) {
+        m_context->logicalDevice->GetHandle().freeCommandBuffers(m_commandPool, m_commandBuffers);
         m_commandBuffers.clear();
     }
-    if (m_commandPool && m_logicalDevice) {
-        m_logicalDevice->GetHandle().destroyCommandPool(m_commandPool);
+    if (m_commandPool && m_context->logicalDevice) {
+        m_context->logicalDevice->GetHandle().destroyCommandPool(m_commandPool);
         m_commandPool = nullptr;
     }
 
 
+}
+
+vk::CommandBuffer VulkanCommandSystem::BeginSingleTimeCommands()
+{
+    vk::CommandBufferAllocateInfo allocInfo{};
+    allocInfo.level = vk::CommandBufferLevel::ePrimary;
+    allocInfo.commandPool = m_commandPool;
+    allocInfo.commandBufferCount = 1;
+
+    vk::CommandBuffer cmdBuffer;
+    m_context->logicalDevice->GetHandle().allocateCommandBuffers(&allocInfo, &cmdBuffer);
+
+    vk::CommandBufferBeginInfo beginInfo{};
+    beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+    cmdBuffer.begin(beginInfo);
+
+    return cmdBuffer;
+}
+
+void VulkanCommandSystem::EndSingleTimeCommands(vk::CommandBuffer cmdBuffer)
+{
+    cmdBuffer.end();
+
+    vk::SubmitInfo submitInfo{};
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &cmdBuffer;
+
+    vk::Queue graphicsQueue = m_context->logicalDevice->GetGraphicsQueue();
+    graphicsQueue.submit(submitInfo, nullptr);
+    graphicsQueue.waitIdle();
+
+    m_context->logicalDevice->GetHandle().freeCommandBuffers(m_commandPool, cmdBuffer);
 }

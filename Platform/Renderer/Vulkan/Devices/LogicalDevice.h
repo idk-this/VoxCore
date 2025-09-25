@@ -10,18 +10,18 @@ class PhysicalDevice;
 
 class LogicalDevice {
 public:
-    LogicalDevice(VulkanInstance* instance);
+    explicit LogicalDevice(VulkanContext* context) : m_context(context) {};
     ~LogicalDevice();
 
 
-    bool Init(PhysicalDevice* physicalDevice);
+    bool Init();
 
     vk::Device& GetHandle() { return m_logicalDevice; }
     vk::Queue& GetGraphicsQueue() { return m_graphicsQueue; }
     vk::Queue& GetPresentQueue() { return m_presentQueue; }
 
 private:
-    VulkanInstance* m_vulkanInstance; // Pointer to the Vulkan instance
+    VulkanContext* m_context;
     vk::Device m_logicalDevice; // Handle to the logical device
     vk::Queue m_graphicsQueue;
     vk::Queue m_presentQueue;

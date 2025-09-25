@@ -58,6 +58,27 @@ bool VulkanBuffer::Create(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::M
     return true;
 }
 
+void VulkanBuffer::Destroy()
+{
+    if (m_buffer) {
+        try {
+            m_logicalDevice->GetHandle().destroyBuffer(m_buffer);
+        } catch (...) {}
+        m_buffer = VK_NULL_HANDLE;
+    }
+
+    if (m_memory) {
+        try {
+            m_logicalDevice->GetHandle().freeMemory(m_memory);
+        } catch (...) {}
+        m_memory = VK_NULL_HANDLE;
+    }
+
+
+    m_descriptorSet = VK_NULL_HANDLE;
+    m_bufferInfo = vk::DescriptorBufferInfo();
+}
+
 uint32_t VulkanBuffer::FindMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties)
 {
     auto memProperties = m_physicalDevice->GetHandle().getMemoryProperties();

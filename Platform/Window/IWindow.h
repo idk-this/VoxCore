@@ -26,13 +26,16 @@ public:
     virtual void* GetNativeHandle() = 0;
 
     virtual void SetRelativeMouseMode(bool enable) = 0;
+    virtual void ToggleRelativeMouseMode() = 0;
+    virtual bool IsRelativeMouseMode() const { return m_relativeMouseMode; }
     virtual void SetTitle(const std::string& title) = 0;
     [[nodiscard]] uint32_t GetWidth() const { return m_width; }
     [[nodiscard]] uint32_t GetHeight() const { return m_height; }
     WindowInputComponent *GetInputComponent() { return inputComponent; }
 protected:
     WindowInputComponent *inputComponent = nullptr;
-private:
+
     uint32_t m_width = 0;
     uint32_t m_height = 0;
+    bool m_relativeMouseMode = false;
 };

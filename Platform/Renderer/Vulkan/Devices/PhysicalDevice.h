@@ -8,14 +8,16 @@
 
 class PhysicalDevice {
 public:
-    PhysicalDevice(VulkanInstance* instance);
+    explicit PhysicalDevice(VulkanContext* context)
+       : m_context(context) {}
     ~PhysicalDevice();
 
     // Initialize the physical device with the given Vulkan instance
-    bool Init(vk::SurfaceKHR surface);
+    bool Init();
 
     // Get the physical device handle
     vk::PhysicalDevice& GetHandle() { return m_physicalDevice; }
+    const vk::PhysicalDeviceFeatures& GetSupportedFeatures() const { return m_supportedFeatures; }
 
     vk::Format FindSupportedFormat(const std::vector<vk::Format>& candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features) const;
 
@@ -24,8 +26,9 @@ public:
     uint32_t& GetPresentQueueFamilyIndex() { return m_presentQueueFamilyIndex; }
 
 private:
-    VulkanInstance* m_vulkanInstance;
+    VulkanContext* m_context;
     vk::PhysicalDevice m_physicalDevice; // Handle to the physical device
+    vk::PhysicalDeviceFeatures m_supportedFeatures{};
     uint32_t m_graphicsQueueFamilyIndex = -1; // Index of the graphics queue family
     uint32_t m_presentQueueFamilyIndex = -1; // Index of the present queue family
 };

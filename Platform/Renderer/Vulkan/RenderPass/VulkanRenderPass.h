@@ -11,14 +11,12 @@ class VulkanSwapChain;
 
 class VulkanRenderPass {
 public:
-    VulkanRenderPass(VulkanInstance* instance, LogicalDevice* logicalDevice, VulkanSwapChain* swapchain);
+    VulkanRenderPass(VulkanContext* context) : m_context(context) {};
     ~VulkanRenderPass();
     bool Init();
     vk::RenderPass& GetHandle() { return m_renderPass; }
 
 private:
-    VulkanInstance* m_vulkanInstance; // Pointer to the Vulkan instance
-    vk::RenderPass m_renderPass; // Handle to the render pass
-    LogicalDevice* m_logicalDevice;
-    VulkanSwapChain* m_swapchain;
+    vk::RenderPass m_renderPass;
+    VulkanContext* m_context;
 };

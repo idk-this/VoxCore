@@ -90,10 +90,15 @@ void *SDL3Window::GetNativeHandle() {
 void SDL3Window::SetRelativeMouseMode(bool enable) {
     SDL_SetWindowMouseGrab(m_window, enable);
     enable ? SDL_HideCursor() : SDL_ShowCursor();
-
+    m_relativeMouseMode = enable;
     if (SDL_SetWindowRelativeMouseMode(m_window, enable) < 0) {
         SDL_Log("Failed to set relative mode: %s", SDL_GetError());
     }
+}
+
+void SDL3Window::ToggleRelativeMouseMode()
+{
+    SetRelativeMouseMode(!m_relativeMouseMode);
 }
 
 

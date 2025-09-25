@@ -16,11 +16,10 @@ class PhysicalDevice;
 class LogicalDevice;
 class VulkanRenderPass;
 
-class GraphicsPipeline : public IPipeline {
+class GraphicsPipeline : public IShaderPipeline {
 public:
 
-    GraphicsPipeline(LogicalDevice* device, PhysicalDevice* physicalDevice,
-                      VulkanRenderPass* renderPass, VulkanSwapChain* swapChain);
+    using IShaderPipeline::IShaderPipeline;
 
     ~GraphicsPipeline() override {
         GraphicsPipeline::Cleanup();
@@ -29,26 +28,11 @@ public:
     bool Init() override;
     void Bind(void* cmdBuffer) const override {};
     void Cleanup() override;
-    GraphicsPipeline* SetShader(VulkanShader* shader) {
-        m_shader = shader;
-        return this;
-    }
-    GraphicsPipeline* SetPushConstantRange(vk::ShaderStageFlags stages, uint32_t offset, uint32_t size);
-    GraphicsPipeline* SetDescriptorSetLayouts(const std::vector<vk::DescriptorSetLayout>& layouts);
+    void SetPushConstantRange(vk::ShaderStageFlags stages, uint32_t offset, uint32_t size);
+    void SetDescriptorSetLayouts(const std::vector<vk::DescriptorSetLayout>& layouts);
     vk::Pipeline& GetHandle() { return m_pipeline; }
     void BindDescriptorSet(vk::CommandBuffer* cmd, vk::DescriptorSet descriptorSet);
-    vk::PipelineLayout& GetLayout() { return m_pipelineLayout; }
 
 private:
-
-    LogicalDevice* m_logicalDevice;
-    PhysicalDevice* m_physicalDevice;
-    VulkanRenderPass* m_renderPass;
-    VulkanSwapChain* m_swapChain;
-    vk::Pipeline m_pipeline;
-    vk::PipelineLayout m_pipelineLayout;
-    VulkanShader* m_shader;
-    vk::PushConstantRange m_pushConstantRange{};
-    std::vector<vk::DescriptorSetLayout> m_descriptorSetLayouts;
 };
 

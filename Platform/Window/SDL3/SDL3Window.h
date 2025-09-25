@@ -23,6 +23,7 @@ public:
     [[nodiscard]] bool ShouldClose() const override;
     void* GetNativeHandle() override;
     void SetRelativeMouseMode(bool enable) override;
+    void ToggleRelativeMouseMode() override;
     void SetTitle(const std::string& title) override;
 
 private:

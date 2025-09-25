@@ -18,14 +18,6 @@
 #include "Platform/Renderer/Common/IShader.h"
 #include "Platform/Renderer/Vulkan/Common/VulkanVertexLayout.h"
 
-GraphicsPipeline::GraphicsPipeline(LogicalDevice* device, PhysicalDevice* physicalDevice,
-                                   VulkanRenderPass* renderPass, VulkanSwapChain* swapChain)
-    : m_logicalDevice(device),
-      m_physicalDevice(physicalDevice),
-      m_renderPass(renderPass),
-      m_swapChain(swapChain) {
-
-}
 
 
 bool GraphicsPipeline::Init() {
@@ -52,8 +44,8 @@ bool GraphicsPipeline::Init() {
 );
     vk::PipelineInputAssemblyStateCreateInfo inputAssembly({}, vk::PrimitiveTopology::eTriangleList);
 
-    vk::Viewport viewport(0, 0, (float)m_swapChain->GetSwapExtent().width, (float)m_swapChain->GetSwapExtent().height, 0, 1);
-    vk::Rect2D scissor({0, 0}, m_swapChain->GetSwapExtent());
+    vk::Viewport viewport(0, 0, (float)m_context->swapchain->GetSwapExtent().width, (float)m_context->swapchain->GetSwapExtent().height, 0, 1);
+    vk::Rect2D scissor({0, 0}, m_context->swapchain->GetSwapExtent());
     vk::PipelineViewportStateCreateInfo viewportState({}, 1, &viewport, 1, &scissor);
     vk::PipelineRasterizationStateCreateInfo rasterizer({}, false, false,
                      vk::PolygonMode::eFill, vk::CullModeFlagBits::eNone, vk::FrontFace::eClockwise);
@@ -72,14 +64,14 @@ bool GraphicsPipeline::Init() {
         static_cast<uint32_t>(m_descriptorSetLayouts.size()), m_descriptorSetLayouts.data(),
         0, nullptr);
 
-    m_pipelineLayout = m_logicalDevice->GetHandle().createPipelineLayout(layoutInfo);
+    m_pipelineLayout = m_context->logicalDevice->GetHandle().createPipelineLayout(layoutInfo);
     vk::GraphicsPipelineCreateInfo pipelineInfo({},
         static_cast<uint32_t>(shaderStages.size()), shaderStages.data(),
         &vertexInputInfo, &inputAssembly, nullptr,
         &viewportState, &rasterizer, &multisampling,
         &depthStencil, &colorBlending, nullptr,
-        m_pipelineLayout, m_renderPass->GetHandle());
-    m_pipeline = m_logicalDevice->GetHandle().createGraphicsPipelines({}, pipelineInfo).value[0];
+        m_pipelineLayout, m_context->renderPass->GetHandle());
+    m_pipeline = m_context->logicalDevice->GetHandle().createGraphicsPipelines({}, pipelineInfo).value[0];
 
     return true;
 }
@@ -87,24 +79,22 @@ bool GraphicsPipeline::Init() {
 
 void GraphicsPipeline::Cleanup() {
     for (auto & layout : m_descriptorSetLayouts) {
-        m_logicalDevice->GetHandle().destroyDescriptorSetLayout(layout);
+        m_context->logicalDevice->GetHandle().destroyDescriptorSetLayout(layout);
     }
-    m_logicalDevice->GetHandle().destroyPipelineLayout(m_pipelineLayout);
+    m_context->logicalDevice->GetHandle().destroyPipelineLayout(m_pipelineLayout);
 
     for (auto & module : m_shader->GetShaderModules()) {
-        m_logicalDevice->GetHandle().destroyShaderModule(module.second);
+        m_context->logicalDevice->GetHandle().destroyShaderModule(module.second);
     }
-    m_logicalDevice->GetHandle().destroyPipeline(m_pipeline);
+    m_context->logicalDevice->GetHandle().destroyPipeline(m_pipeline);
 }
 
-GraphicsPipeline* GraphicsPipeline::SetPushConstantRange(vk::ShaderStageFlags stages, uint32_t offset, uint32_t size) {
+void GraphicsPipeline::SetPushConstantRange(vk::ShaderStageFlags stages, uint32_t offset, uint32_t size) {
     m_pushConstantRange = vk::PushConstantRange(stages, offset, size);
-    return this;
 }
 
-GraphicsPipeline * GraphicsPipeline::SetDescriptorSetLayouts(const std::vector<vk::DescriptorSetLayout> &layouts) {
+void GraphicsPipeline::SetDescriptorSetLayouts(const std::vector<vk::DescriptorSetLayout> &layouts) {
     m_descriptorSetLayouts = layouts;
-    return this;
 }
 
 void GraphicsPipeline::BindDescriptorSet(vk::CommandBuffer* cmd, vk::DescriptorSet descriptorSet)

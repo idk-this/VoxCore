@@ -12,10 +12,10 @@ class VulkanRenderPass;
 
 class VulkanSwapChain {
 public:
-    VulkanSwapChain(VulkanInstance* instance, PhysicalDevice* physicalDevice, LogicalDevice* logicalDevice);
+    explicit VulkanSwapChain(VulkanContext* context) : m_context(context) {};
     ~VulkanSwapChain();
 
-    bool Init(vk::SurfaceKHR surface, vk::Extent2D extent);
+    bool Init(vk::Extent2D extent);
     bool CreateFramebuffers(VulkanRenderPass* renderPass);
     void BeginRender(vk::Semaphore& imageAvailableSemaphore);
     void Present(vk::Semaphore& renderSemaphore);
@@ -33,10 +33,8 @@ public:
     uint32_t AcquireNextImage(vk::Semaphore imageAvailableSemaphore);
 
 private:
-    VulkanInstance* m_vulkanInstance;
+    VulkanContext* m_context;
     vk::SwapchainKHR m_swapchain;
-    PhysicalDevice* m_physicalDevice;
-    LogicalDevice* m_logicalDevice;
     std::vector<vk::ImageView> m_imageViews;
     std::vector<vk::Framebuffer> m_framebuffers;
     vk::SurfaceFormatKHR m_surfaceFormat;

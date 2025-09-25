@@ -15,13 +15,16 @@
 
 #include "Core/VulkanInstance.h"
 #include "Common/VulkanCameraUBO.h"
+#include "Common/VulkanTexture.h"
 #include "Pipeline/GraphicsPipeline.h"
 #include "Core/Export.h"
 #include "Core/Common/VoxPak.h"
 
 
-class AActor;
+struct VulkanTexture;
 class UMeshComponent;
+class AActor;
+class UMesh;
 class VulkanCommandSystem;
 class TrianglePipeline;
 class CommandSystem;
@@ -31,10 +34,19 @@ class VulkanSwapChain;
 class LogicalDevice;
 class PhysicalDevice;
 class IUISystem;
-
+struct VulkanContext {
+    std::unique_ptr<VulkanInstance> instance;
+    std::unique_ptr<PhysicalDevice> physicalDevice;
+    std::unique_ptr<LogicalDevice> logicalDevice;
+    std::unique_ptr<VulkanSwapChain> swapchain;
+    std::unique_ptr<VulkanRenderPass> renderPass;
+    std::unordered_map<PipelineType, std::unique_ptr<IShaderPipeline>> pipelines;
+    std::unique_ptr<VulkanCommandSystem> commandSystem;
+    vk::SurfaceKHR surface = nullptr;
+};
 struct MeshRenderData {
-    MeshRenderData(LogicalDevice* logicalDevice, PhysicalDevice* physicalDevice): vertexBuffer(logicalDevice, physicalDevice),
-    indexBuffer(logicalDevice, physicalDevice), instanceBuffer(logicalDevice, physicalDevice)
+    MeshRenderData(VulkanContext* context): vertexBuffer(context->logicalDevice.get(), context->physicalDevice.get()),
+    indexBuffer(context->logicalDevice.get(), context->physicalDevice.get()), instanceBuffer(context->logicalDevice.get(), context->physicalDevice.get())
     {
 
     }
@@ -46,6 +58,9 @@ struct MeshRenderData {
     VulkanBuffer vertexBuffer;
     VulkanBuffer indexBuffer;
     VulkanBuffer instanceBuffer;
+    std::unique_ptr<VulkanTexture> texture;
+    vk::DescriptorSet textureSet;   // <--- добавляем
+    vk::DescriptorPool texturePool; // <--- чтобы потом освободить
     uint32_t indexCount = 0;
     uint32_t instanceCount = 0;
 };
@@ -60,36 +75,24 @@ public:
     void EndFrame() override;
     uint32_t GetCurrentFrame() const { return m_currentFrame; }
     void PrepareMesh(UMeshComponent* mesh, const std::vector<AActor*>& actors);
-    void UpdateInstanceBuffer(UMeshComponent* mesh, const std::vector<AActor*>& actors);
+    bool UpdateInstanceBuffer(UMeshComponent* mesh, const std::vector<AActor*>& actors);
 
-    [[nodiscard]] const std::unique_ptr<VulkanInstance>& GetInstance() const { return m_instance; }
-    [[nodiscard]] const std::unique_ptr<PhysicalDevice>& GetPhysicalDevice() const { return m_physicalDevice; }
-    [[nodiscard]] const std::unique_ptr<LogicalDevice>& GetLogicalDevice() const { return m_logicalDevice; }
-    [[nodiscard]] const std::unique_ptr<VulkanSwapChain>& GetSwapchain() const { return m_swapchain; }
-    [[nodiscard]] const std::unique_ptr<VulkanRenderPass>& GetRenderPass() const { return m_renderPass; }
-    [[nodiscard]] const std::unique_ptr<VulkanCommandSystem>& GetCommandSystem() const { return m_commandSystem; }
-
+    [[nodiscard]] const std::unique_ptr<VulkanContext>& GetContext() const { return m_context; }
 private:
     uint32_t m_currentFrame = 0;
     UWorld* m_world = nullptr;
-    std::unique_ptr<VulkanInstance> m_instance;
-    std::unique_ptr<PhysicalDevice> m_physicalDevice;
-    std::unique_ptr<LogicalDevice> m_logicalDevice;
-    std::unique_ptr<VulkanSwapChain> m_swapchain;
-    std::unique_ptr<VulkanRenderPass> m_renderPass;
-    std::unique_ptr<GraphicsPipeline> m_graphicsPipeline;
-    std::unique_ptr<VulkanCommandSystem> m_commandSystem;
+    std::unique_ptr<VulkanContext> m_context;
     std::unique_ptr<VulkanCameraUBO> m_cameraUBO;
 
     std::unordered_map<UMeshComponent*, MeshRenderData> m_meshDataMap;
+
 
     VoxPak m_shaderPak;
 
     std::vector<vk::Semaphore> m_imageAvailableSemaphores;
     std::vector<vk::Semaphore> m_renderFinishedSemaphores;
     std::vector<vk::Fence> m_inFlightFences;
-
-    vk::SurfaceKHR m_surface = nullptr;
+    vk::DescriptorSetLayout m_textureLayout;
     std::chrono::high_resolution_clock::time_point m_startTime;
     void Cleanup() override;
     void RenderFrame() override;

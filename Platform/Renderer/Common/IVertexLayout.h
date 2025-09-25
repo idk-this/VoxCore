@@ -7,7 +7,6 @@
 struct InstanceData {
     glm::mat4 model;
     glm::vec3 color;
-    float padding;
 };
 
 class IVertexLayout {

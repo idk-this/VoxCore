@@ -9,7 +9,7 @@
 #include "../../../../Core/Log/Logger.h"
 #include "SDL3/SDL_vulkan.h"
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
-VulkanInstance::VulkanInstance() {
+VulkanInstance::VulkanInstance(VulkanContext* context) : m_context(context) {
     m_appInfo = vk::ApplicationInfo{};
     m_appInfo.pApplicationName = "VoxCore Engine base";					// Custom name of the application
     m_appInfo.applicationVersion = VK_MAKE_VERSION(0, 0, 1);		// Custom version of the application

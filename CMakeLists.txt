@@ -26,6 +26,9 @@ add_subdirectory(libs/SDL)
 
 find_package(Vulkan REQUIRED COMPONENTS glslang SPIRV-Tools)
 
+add_library(stb INTERFACE)
+target_include_directories(stb INTERFACE libs/stb)
+
 
 file(GLOB IMGUI_SOURCES
         libs/imgui/*.cpp
@@ -58,15 +61,20 @@ file(GLOB_RECURSE ENGINE_HDR
         Platform/*.h
         Platform/**/*.h
 )
-
+message(STATUS "ENGINE_SRC files:")
+foreach(src ${ENGINE_SRC})
+    message(STATUS " - ${src}")
+endforeach()
 add_library(VoxCore SHARED ${ENGINE_SRC} ${ENGINE_HDR})
 
 target_include_directories(VoxCore PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
         libs/glm
+        libs/stb
         libs/SDL/include
         ${Vulkan_INCLUDE_DIRS}
         "$ENV{VULKAN_SDK}/Include"
+
 )
 
 target_link_libraries(VoxCore PRIVATE
@@ -74,6 +82,7 @@ target_link_libraries(VoxCore PRIVATE
         SDL3-static
         Vulkan::Vulkan
 )
+
 
 if(WIN32)
     target_link_libraries(VoxCore PRIVATE "$ENV{VULKAN_SDK}/Lib/shaderc_shared.lib")

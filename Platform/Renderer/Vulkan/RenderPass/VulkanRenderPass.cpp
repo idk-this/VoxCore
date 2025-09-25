@@ -9,21 +9,17 @@
 #include "Platform/Renderer/Vulkan/Swapchain/VulkanSwapChain.h"
 
 
-VulkanRenderPass::VulkanRenderPass(VulkanInstance *instance, LogicalDevice *logicalDevice, VulkanSwapChain* swapchain)
-    : m_vulkanInstance(instance), m_logicalDevice(logicalDevice), m_swapchain(swapchain) {
-
-}
 
 VulkanRenderPass::~VulkanRenderPass() {
     if (m_renderPass) {
-        m_logicalDevice->GetHandle().destroyRenderPass(m_renderPass);
+        m_context->logicalDevice->GetHandle().destroyRenderPass(m_renderPass);
     }
 }
 
 bool VulkanRenderPass::Init() {
     vk::AttachmentDescription colorAttachment(
         {},
-        m_swapchain->GetSurfaceFormat().format,
+        m_context->swapchain->GetSurfaceFormat().format,
         vk::SampleCountFlagBits::e1,
         vk::AttachmentLoadOp::eClear,
         vk::AttachmentStoreOp::eStore,
@@ -35,7 +31,7 @@ bool VulkanRenderPass::Init() {
 
     vk::AttachmentDescription depthAttachment(
         {},
-        m_swapchain->GetDepthFormat(),
+        m_context->swapchain->GetDepthFormat(),
         vk::SampleCountFlagBits::e1,
         vk::AttachmentLoadOp::eClear,
         vk::AttachmentStoreOp::eDontCare,
@@ -76,7 +72,7 @@ bool VulkanRenderPass::Init() {
         static_cast<uint32_t>(dependencies.size()), dependencies.data()
     );
 
-    m_renderPass = m_logicalDevice->GetHandle().createRenderPass(renderPassInfo);
+    m_renderPass = m_context->logicalDevice->GetHandle().createRenderPass(renderPassInfo);
     LOG_INFO("Vulkan", "Render pass created with {} attachments.", attachments.size());
     return true;
 }

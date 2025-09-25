@@ -14,7 +14,7 @@ class VOXCORE_API VulkanBuffer {
 
 public:
     VulkanBuffer(LogicalDevice* logicalDevice, PhysicalDevice* physicalDevice);
-    ~VulkanBuffer() = default;
+    ~VulkanBuffer() {};
     bool Create(vk::DescriptorSetLayout layout, vk::DescriptorPool pool, vk::DeviceSize size, vk::BufferUsageFlags usage, uint32_t binding);
     bool Create(vk::DeviceSize size, vk::BufferUsageFlags usage,
                vk::MemoryPropertyFlags properties = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);

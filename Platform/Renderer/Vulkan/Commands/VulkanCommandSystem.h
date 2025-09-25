@@ -13,24 +13,21 @@ class LogicalDevice;
 
 class VulkanCommandSystem {
 public:
-    explicit VulkanCommandSystem(VulkanInstance* instance, LogicalDevice* logicalDevice, VulkanRenderPass* renderPass,
-        VulkanSwapChain* swapChain, GraphicsPipeline* graphicsPipeline);
+    explicit VulkanCommandSystem(VulkanContext* context) : m_context(context) {};
     ~VulkanCommandSystem()
     {
         Cleanup();
     }
-    bool Init(uint32_t graphicsQueueFamilyIndex);
+    bool Init();
     void Cleanup();
+    vk::CommandBuffer BeginSingleTimeCommands();
+    void EndSingleTimeCommands(vk::CommandBuffer cmd);
     vk::CommandBuffer& GetCommandBuffer(const int frameIndex = -1) {
         return m_commandBuffers[frameIndex];
     }
 
 private:
-    VulkanInstance* m_vulkanInstance;
-    LogicalDevice* m_logicalDevice;
-    VulkanRenderPass* m_renderPass;
-    VulkanSwapChain* m_swapChain;
-    GraphicsPipeline* m_graphicsPipeline;
+    VulkanContext* m_context;
     vk::CommandPool m_commandPool{};
     std::vector<vk::CommandBuffer> m_commandBuffers;
 };

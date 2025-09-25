@@ -6,16 +6,13 @@
 
 #include "Core/Log/Logger.h"
 
-PhysicalDevice::PhysicalDevice(VulkanInstance* instance) :  m_vulkanInstance(instance) {
-
-}
 
 PhysicalDevice::~PhysicalDevice() {
     m_physicalDevice = nullptr;
 }
 
-bool PhysicalDevice::Init(vk::SurfaceKHR surface) {
-    auto gpus = m_vulkanInstance->GetInstance().enumeratePhysicalDevices();
+bool PhysicalDevice::Init() {
+    auto gpus =  static_cast<VulkanRenderer*>(Engine::GetCurrentContext().GetRenderer())->GetContext()->instance->GetInstance().enumeratePhysicalDevices();
     vk::PhysicalDeviceMemoryProperties bestMemoryProperties;
     size_t maxVideoMemory = 0;
 
@@ -29,7 +26,7 @@ bool PhysicalDevice::Init(vk::SurfaceKHR surface) {
         for (uint32_t i = 0; i < queueProps.size(); ++i) {
             if (queueProps[i].queueFlags & vk::QueueFlagBits::eGraphics)
                 graphicsIndex = i;
-            if (gpu.getSurfaceSupportKHR(i, surface))
+            if (gpu.getSurfaceSupportKHR(i, m_context->surface))
                 presentIndex = i;
         }
 
@@ -56,7 +53,7 @@ bool PhysicalDevice::Init(vk::SurfaceKHR surface) {
         LOG_ERROR("Vulkan", "Failed to find a suitable GPU with graphics and present support.");
         return false;
     }
-
+    m_supportedFeatures = m_physicalDevice.getFeatures();
     auto deviceProps = m_physicalDevice.getProperties();
     LOG_INFO("Vulkan", "Selected GPU: {} with {}GB VRAM",
              deviceProps.deviceName.data(), maxVideoMemory / (1024 * 1024 * 1024));

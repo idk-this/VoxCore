@@ -3,15 +3,21 @@
 //
 
 #pragma once
+
 #include <cstdint>
 
-class ITexture
-{
+class UTexture;
+
+class ITexture {
 public:
     virtual ~ITexture() = default;
 
-    [[nodiscard]] virtual int GetWidth() const = 0;
-    [[nodiscard]] virtual int GetHeight() const = 0;
+    virtual bool UploadFromCPU(const UTexture* src) = 0;
 
     virtual void Bind(uint32_t slot) = 0;
+
+    [[nodiscard]] virtual int GetWidth() const = 0;
+    [[nodiscard]] virtual int GetHeight() const = 0;
+    [[nodiscard]] virtual int GetChannels() const = 0;
+    virtual void* GetNativeHandle() const = 0;
 };
