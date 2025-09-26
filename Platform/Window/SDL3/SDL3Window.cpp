@@ -5,8 +5,6 @@
 #include "SDL3Window.h"
 #include <SDL3/SDL.h>
 #include <algorithm>
-#include <imgui.h>
-
 
 #include "../../../Core/Log/Logger.h"
 #include "Platform/Window/Components/WindowInputComponent.h"
@@ -40,7 +38,7 @@ bool SDL3Window::Create(int width, int height, const std::string &title) {
         LOG_FATAL("Window", "Failed to create window: {}", SDL_GetError());
         return false;
     }
-
+    Engine::GetCurrentContext().GetImGui()->InitWindow(m_window);
     inputComponent = new WindowInputComponent();
 
     return m_window != nullptr;
@@ -49,7 +47,9 @@ bool SDL3Window::Create(int width, int height, const std::string &title) {
 void SDL3Window::PollEvents() {
     inputComponent->BeginFrame();
     SDL_Event event;
+
     while (SDL_PollEvent(&event)) {
+        Engine::GetCurrentContext().GetImGui()->PollEvents(&event);
         switch (event.type) {
             case SDL_EVENT_QUIT:
                 m_shouldClose = true;

@@ -5,7 +5,6 @@
 #include "VulkanRenderer.h"
 
 #include <cassert>
-#include <SDL3/SDL_vulkan.h>
 #include <unordered_map>
 
 #include "Core/CVar/CVar.h"
@@ -31,8 +30,15 @@
 #include "Core/ECS/Player/APlayerController.h"
 #include "Core/ECS/Player/ULocalPlayer.h"
 
+#include "imgui.h"
+#include "imgui_internal.h"
+#include "backends/imgui_impl_vulkan.h"
+#include <SDL3/SDL_vulkan.h>
+
 DECLARE_CONVAR_MINMAX("r_max_frames_in_flight", 2, 1, 4, "Maximum number of frames in flight for swapchain", CVAR_ARCHIVE);
 
+static vk::DescriptorPool g_imguiDescriptorPool = {};
+static bool g_imguiInitialized = false;
 
 VulkanRenderer::VulkanRenderer()
 {
@@ -82,9 +88,9 @@ bool VulkanRenderer::Init(IWindow *window, UWorld* world) {
 	vulkanShader = new VulkanShader(m_context->logicalDevice.get());
 	vulkanShader->LoadFromSource(m_shaderPak.ReadFileWithOverrideString("SimpleRectangle.shader"));
 
-
+	m_window = window;
 	m_context->pipelines[PipelineType::Graphics]->SetShader(vulkanShader);
-
+	InitImGuiForVulkan(window);
 
     m_cameraUBO->PreInit(dynamic_cast<GraphicsPipeline*>(m_context->pipelines[PipelineType::Graphics].get()));
 	auto cameraLayout = m_cameraUBO->GetDescriptorSetLayout();
@@ -234,6 +240,21 @@ void VulkanRenderer::ProcessRender() {
         }
     }
 
+	if (g_imguiInitialized) {
+
+		Engine::GetCurrentContext().GetImGui()->NewFrameGraphics();
+		Engine::GetCurrentContext().GetImGui()->NewFrameWindow();
+
+		ImGui::NewFrame();
+
+		ImGui::Begin("Debug");
+		ImGui::Text("Vulkan + ImGui");
+		ImGui::Text("FPS: %.1f", 1.0f/ImGui::GetIO().DeltaTime);
+		ImGui::End();
+
+		Engine::GetCurrentContext().GetImGui()->Render(cmd);
+
+	}
     cmd.endRenderPass();
     cmd.end();
 }
@@ -356,7 +377,17 @@ bool VulkanRenderer::UpdateInstanceBuffer(UMeshComponent* mesh, const std::vecto
 void VulkanRenderer::Cleanup() {
 	LOG_INFO("Vulkan", "Cleaning up Vulkan resources.");
 	m_context->logicalDevice->GetHandle().waitIdle();
-
+	for (auto& [mesh, data] : m_meshDataMap) {
+		data.vertexBuffer.Destroy();
+		data.indexBuffer.Destroy();
+		data.instanceBuffer.Destroy();
+		data.texture.reset();
+		if (data.texturePool) {
+			m_context->logicalDevice->GetHandle().destroyDescriptorPool(data.texturePool);
+		}
+	}
+	m_meshDataMap.clear();
+	Engine::GetCurrentContext().GetImGui()->Shutdown();
 	m_context->commandSystem.reset();
 	m_context->swapchain.reset();
 
@@ -394,4 +425,54 @@ void VulkanRenderer::RenderFrame() {
 	BeginFrame();
 	ProcessRender();
 	EndFrame();
+}
+
+bool VulkanRenderer::InitImGuiForVulkan(IWindow* window)
+{
+    // Create descriptor pool for ImGui (needs many types to be available)
+    std::vector<vk::DescriptorPoolSize> poolSizes = {
+        { vk::DescriptorType::eSampler, 1000 },
+        { vk::DescriptorType::eCombinedImageSampler, 1000 },
+        { vk::DescriptorType::eSampledImage, 1000 },
+        { vk::DescriptorType::eStorageImage, 1000 },
+        { vk::DescriptorType::eUniformTexelBuffer, 1000 },
+        { vk::DescriptorType::eStorageTexelBuffer, 1000 },
+        { vk::DescriptorType::eUniformBuffer, 1000 },
+        { vk::DescriptorType::eStorageBuffer, 1000 },
+        { vk::DescriptorType::eUniformBufferDynamic, 1000 },
+        { vk::DescriptorType::eStorageBufferDynamic, 1000 },
+        { vk::DescriptorType::eInputAttachment, 1000 }
+    };
+
+    vk::DescriptorPoolCreateInfo poolInfo{};
+    poolInfo.flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
+    poolInfo.maxSets = 1000 * static_cast<uint32_t>(poolSizes.size());
+    poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+    poolInfo.pPoolSizes = poolSizes.data();
+
+    g_imguiDescriptorPool = m_context->logicalDevice->GetHandle().createDescriptorPool(poolInfo);
+
+
+
+    // Vulkan init
+    ImGui_ImplVulkan_InitInfo init_info = {};
+    init_info.Instance = m_context->instance->GetInstance();
+    init_info.PhysicalDevice = m_context->physicalDevice->GetHandle();
+    init_info.Device = m_context->logicalDevice->GetHandle();
+    init_info.QueueFamily = m_context->physicalDevice->GetGraphicsQueueFamilyIndex();
+    init_info.Queue = m_context->logicalDevice->GetGraphicsQueue();
+    init_info.PipelineCache = VK_NULL_HANDLE;
+    init_info.DescriptorPool = g_imguiDescriptorPool;
+    init_info.Subpass = 0;
+    init_info.MinImageCount = 3;
+    init_info.ImageCount = m_context->swapchain->GetImageCount();
+    init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+    init_info.Allocator = nullptr;
+	init_info.RenderPass = m_context->renderPass->GetHandle();
+
+	Engine::GetCurrentContext().GetImGui()->InitGraphics(&init_info);
+
+
+    g_imguiInitialized = true;
+    return true;
 }

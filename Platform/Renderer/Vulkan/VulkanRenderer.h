@@ -59,8 +59,8 @@ struct MeshRenderData {
     VulkanBuffer indexBuffer;
     VulkanBuffer instanceBuffer;
     std::unique_ptr<VulkanTexture> texture;
-    vk::DescriptorSet textureSet;   // <--- добавляем
-    vk::DescriptorPool texturePool; // <--- чтобы потом освободить
+    vk::DescriptorSet textureSet;
+    vk::DescriptorPool texturePool;
     uint32_t indexCount = 0;
     uint32_t instanceCount = 0;
 };
@@ -85,8 +85,8 @@ private:
     std::unique_ptr<VulkanCameraUBO> m_cameraUBO;
 
     std::unordered_map<UMeshComponent*, MeshRenderData> m_meshDataMap;
-
-
+    bool InitImGuiForVulkan(IWindow* window);
+    IWindow* m_window;
     VoxPak m_shaderPak;
 
     std::vector<vk::Semaphore> m_imageAvailableSemaphores;

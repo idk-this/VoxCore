@@ -125,96 +125,101 @@ public:
     vertices.clear();
     indices.clear();
     colors.clear();
+    texCoords.clear();
 
     std::ifstream file(filename, std::ios::in);
     if (!file.is_open()) {
         return false;
     }
 
-    // Первый проход - подсчет для резервирования памяти
     size_t vertexCount = 0;
+    size_t texCoordCount = 0;
     size_t faceCount = 0;
 
     std::string line;
     while (std::getline(file, line)) {
         if (line.empty() || line[0] == '#') continue;
-        if (line[0] == 'v' && line[1] == ' ') vertexCount++;
-        else if (line[0] == 'f' && line[1] == ' ') faceCount++;
+        if (line.rfind("v ", 0) == 0) vertexCount++;
+        else if (line.rfind("vt ", 0) == 0) texCoordCount++;
+        else if (line.rfind("f ", 0) == 0) faceCount++;
     }
     file.clear();
     file.seekg(0);
 
-
     std::vector<glm::vec3> tempVertices;
-    tempVertices.reserve(vertexCount);
-    vertices.reserve(faceCount * 3); // Каждая грань = 3 вершины
-    colors.reserve(faceCount * 3);
-    indices.reserve(faceCount * 3);
+    std::vector<glm::vec2> tempTexCoords;
 
+    tempVertices.reserve(vertexCount);
+    tempTexCoords.reserve(texCoordCount);
+    vertices.reserve(faceCount * 3);
+    colors.reserve(faceCount * 3);
+    texCoords.reserve(faceCount * 3);
+    indices.reserve(faceCount * 3);
 
     while (std::getline(file, line)) {
         if (line.empty() || line[0] == '#') continue;
 
-        if (line[0] == 'v' && line[1] == ' ') {
-            // Вершина
+        if (line.rfind("v ", 0) == 0) {
             glm::vec3 vertex;
             if (sscanf(line.c_str() + 2, "%f %f %f", &vertex.x, &vertex.y, &vertex.z) == 3) {
                 tempVertices.push_back(vertex);
             }
         }
-        else if (line[0] == 'f' && line[1] == ' ') {
-            // Грань
-            std::vector<uint32_t> faceIndices;
+        else if (line.rfind("vt ", 0) == 0) {
+            glm::vec2 uv;
+            if (sscanf(line.c_str() + 3, "%f %f", &uv.x, &uv.y) == 2) {
+                uv.y = 1.0f - uv.y; // инвертируем Y (OpenGL-style)
+                tempTexCoords.push_back(uv);
+            }
+        }
+        else if (line.rfind("f ", 0) == 0) {
+            std::vector<uint32_t> vIdx, tIdx;
             const char* ptr = line.c_str() + 2;
 
-            // Быстрый парсинг индексов грани
             while (*ptr) {
-                // Пропускаем пробелы
                 while (*ptr == ' ') ptr++;
                 if (!*ptr) break;
 
-                // Парсим первый номер (вершина)
-                uint32_t vIndex = 0;
+                uint32_t vIndex = 0, tIndex = 0;
+                // vIndex
                 while (*ptr >= '0' && *ptr <= '9') {
                     vIndex = vIndex * 10 + (*ptr - '0');
                     ptr++;
                 }
-
-                if (vIndex > 0 && vIndex <= tempVertices.size()) {
-                    faceIndices.push_back(vIndex - 1);
+                if (*ptr == '/') {
+                    ptr++;
+                    if (*ptr >= '0' && *ptr <= '9') {
+                        while (*ptr >= '0' && *ptr <= '9') {
+                            tIndex = tIndex * 10 + (*ptr - '0');
+                            ptr++;
+                        }
+                    }
+                    // нормали можно тоже парсить, но пока пропускаем
+                    while (*ptr && *ptr != ' ') ptr++;
                 }
 
-                // Пропускаем остальные данные вершины (текстура/нормаль)
-                while (*ptr && *ptr != ' ') ptr++;
+                if (vIndex > 0) vIdx.push_back(vIndex - 1);
+                if (tIndex > 0) tIdx.push_back(tIndex - 1);
             }
 
-            // Триангуляция грани (простой fan-метод)
-            if (faceIndices.size() >= 3) {
-                glm::vec3 faceColor = GenerateRandomColor();
-
-                // Для плоского шейдинга создаем отдельные вершины для каждой грани
+            if (vIdx.size() >= 3) {
+                //glm::vec3 faceColor = GenerateRandomColor();
                 uint32_t baseIndex = (uint32_t)vertices.size();
 
-                // Первый треугольник
-                for (int i = 0; i < 3; i++) {
-                    vertices.push_back(tempVertices[faceIndices[i]]);
-                    colors.push_back(faceColor);
-                    indices.push_back(baseIndex + i);
+                for (size_t i = 0; i < vIdx.size(); i++) {
+                    vertices.push_back(tempVertices[vIdx[i]]);
+                    //colors.push_back(faceColor);
+                    if (i < tIdx.size() && tIdx[i] < tempTexCoords.size())
+                        texCoords.push_back(tempTexCoords[tIdx[i]]);
+                    else
+                        texCoords.push_back(glm::vec2(0.0f, 0.0f));
                 }
 
-                // Остальные треугольники (если грань многоугольная)
-                for (size_t i = 3; i < faceIndices.size(); i++) {
-                    vertices.push_back(tempVertices[faceIndices[0]]);
-                    vertices.push_back(tempVertices[faceIndices[i-1]]);
-                    vertices.push_back(tempVertices[faceIndices[i]]);
-
-                    colors.push_back(faceColor);
-                    colors.push_back(faceColor);
-                    colors.push_back(faceColor);
-
-                    indices.push_back(baseIndex + (uint32_t)(i * 3 - 3));
-                    indices.push_back(baseIndex + (uint32_t)(i * 3 - 2));
-                    indices.push_back(baseIndex + (uint32_t)(i * 3 - 1));
+                // триангуляция
+                for (size_t i = 1; i + 1 < vIdx.size(); i++) {
+                    indices.push_back(baseIndex);
+                    indices.push_back(baseIndex + (uint32_t)i);
+                    indices.push_back(baseIndex + (uint32_t)i + 1);
                 }
             }
         }
@@ -223,6 +228,7 @@ public:
 
     return !vertices.empty();
 }
+
     void Clear() {
         vertices.clear();
         indices.clear();

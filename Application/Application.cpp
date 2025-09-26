@@ -27,10 +27,11 @@ Engine::Application* Engine::Application::m_instance = nullptr;
 
 Application::Application()
 {
+
     m_cvar = std::make_unique<CVarManager>(CVarRegistry::Instance().GetDeclarations());
     m_logSystem = std::make_unique<Logger>();
     m_instance = this;
-
+    m_imgui = std::make_shared<ImGuiWrapper>(ImGuiBackendGraphicsAPI::Vulkan, ImGuiBackendWindowAPI::SDL3);
 };
 
 class LocalPlayer : public AActor {

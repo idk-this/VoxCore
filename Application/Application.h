@@ -3,6 +3,7 @@
 #include <string>
 #include "Platform/Renderer/Vulkan/VulkanRenderer.h"
 #include "Core/Export.h"
+#include "Core/UI/ImGui.h"
 
 class ULocalPlayer;
 class Logger;
@@ -32,6 +33,8 @@ namespace Engine {
         std::shared_ptr<ULocalPlayer> GetLocalPlayer() const { return m_localPlayer; }
         IWindow* GetWindow() const { return window.get(); }
         UWorld* GetWorld() const { return m_world.get(); }
+        ImGuiWrapper* GetImGui() const { return m_imgui.get(); }
+
     protected:
         // Initializes application resources
         virtual void Init();
@@ -59,6 +62,7 @@ namespace Engine {
         std::unique_ptr<Logger> m_logSystem;
         std::unique_ptr<CVarManager> m_cvar;
         std::shared_ptr<ULocalPlayer> m_localPlayer;
+        std::shared_ptr<ImGuiWrapper> m_imgui;
     };
 
     inline Application& GetCurrentContext() {
