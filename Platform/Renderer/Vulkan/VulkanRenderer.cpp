@@ -95,7 +95,6 @@ bool VulkanRenderer::Init(IWindow *window, UWorld* world) {
     m_cameraUBO->PreInit();
 	auto cameraLayout = m_cameraUBO->GetDescriptorSetLayout();
 
-	// --- Texture layout ---
 	vk::DescriptorSetLayoutBinding samplerLayoutBinding{};
 	samplerLayoutBinding.binding = 0;
 	samplerLayoutBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
@@ -150,7 +149,6 @@ void VulkanRenderer::ProcessRender() {
     vk::CommandBufferBeginInfo beginInfo{};
     cmd.begin(beginInfo);
 
-    // Камера
     UCameraComponent* camera = Engine::Application::Get()->GetLocalPlayer()->GetController()->GetPawn()->GetComponent<UCameraComponent>();
     if (camera) {
         CameraData camera_data = {
@@ -176,7 +174,6 @@ void VulkanRenderer::ProcessRender() {
     cmd.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
     cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_context->pipelines[PipelineType::Graphics]->GetPipeline());
 
-    // Рендер акторов по одному
     if (m_world) {
         auto actors = m_world->GetActors();
 
@@ -184,14 +181,16 @@ void VulkanRenderer::ProcessRender() {
             auto mesh = actor->GetComponent<UMeshComponent>();
             if (!mesh) continue;
 
-            // Достаём или создаём данные для конкретного компонента
             auto meshDataIt = m_meshDataMap.find(mesh);
             if (meshDataIt == m_meshDataMap.end()) {
                 PrepareMesh(mesh, {actor.get()});
                 meshDataIt = m_meshDataMap.find(mesh);
             }
-
-            // Обновляем instance buffer для этого актора
+        	if (mesh->Mesh->meshDirty) {
+        		PrepareMesh(mesh, {actor.get()});
+        		mesh->Mesh->meshDirty = false;
+        		meshDataIt = m_meshDataMap.find(mesh);
+        	}
             if (UpdateInstanceBuffer(mesh, {actor.get()})) {
                 vk::Buffer buffers[] = {
                     meshDataIt->second.vertexBuffer->GetBuffer(),
@@ -206,7 +205,6 @@ void VulkanRenderer::ProcessRender() {
                     vk::IndexType::eUint32
                 );
 
-                // Дескрипторы: камера + текстура
                 if (meshDataIt->second.textureSet) {
                     std::array<vk::DescriptorSet, 2> sets = {
                         m_cameraUBO->GetDescriptorSet(),
@@ -231,7 +229,6 @@ void VulkanRenderer::ProcessRender() {
                     );
                 }
 
-                // Рисуем один экземпляр
                 cmd.drawIndexed(
                     meshDataIt->second.indexCount,
                     1,
@@ -254,7 +251,29 @@ void VulkanRenderer::ProcessRender() {
 		ImGui::Text("FPS: %.1f", 1.0f/ImGui::GetIO().DeltaTime);
 		ImGui::Text("Rendered vertices: %llu", m_renderedVertices);
 		ImGui::End();
+		{
+			ImDrawList* drawList = ImGui::GetBackgroundDrawList();
+			ImVec2 displaySize = ImGui::GetIO().DisplaySize;
+			ImVec2 center(displaySize.x * 0.5f, displaySize.y * 0.5f);
 
+			float size = 8.0f;
+			float thickness = 2.0f;
+			ImU32 color = IM_COL32(255, 255, 255, 255);
+
+			drawList->AddLine(
+				ImVec2(center.x - size, center.y),
+				ImVec2(center.x + size, center.y),
+				color,
+				thickness
+			);
+
+			drawList->AddLine(
+				ImVec2(center.x, center.y - size),
+				ImVec2(center.x, center.y + size),
+				color,
+				thickness
+			);
+		}
 		Engine::GetCurrentContext().GetImGui()->Render(cmd);
 
 	}
@@ -327,11 +346,9 @@ void VulkanRenderer::PrepareMesh(UMeshComponent* mesh, const std::vector<AActor*
 		vk::DescriptorPoolCreateInfo poolInfo({}, 1, 1, &poolSize);
 		data.texturePool = m_context->logicalDevice->GetHandle().createDescriptorPool(poolInfo);
 
-		// выделяем descriptor set
 		vk::DescriptorSetAllocateInfo allocInfo(data.texturePool, 1, &m_textureLayout);
 		data.textureSet = m_context->logicalDevice->GetHandle().allocateDescriptorSets(allocInfo).front();
 
-		// обновляем descriptor
 		vk::DescriptorImageInfo imageInfo{};
 		imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		imageInfo.imageView   = data.texture->GetImageView();
@@ -351,8 +368,19 @@ void VulkanRenderer::PrepareMesh(UMeshComponent* mesh, const std::vector<AActor*
 		data.texture = nullptr;
 		data.textureSet = nullptr;
 	}
-
-	m_meshDataMap.emplace(mesh, std::move(data));
+	auto it = m_meshDataMap.find(mesh);
+	if (it != m_meshDataMap.end()) {
+		it->second.vertexBuffer->Destroy();
+		it->second.indexBuffer->Destroy();
+		it->second.instanceBuffer->Destroy();
+		if (it->second.texturePool) {
+			m_context->logicalDevice->GetHandle().destroyDescriptorPool(it->second.texturePool);
+		}
+		it->second = std::move(data);
+	} else {
+		m_meshDataMap.emplace(mesh, std::move(data));
+	}
+	//m_meshDataMap.emplace(mesh, std::move(data));
 }
 bool VulkanRenderer::UpdateInstanceBuffer(UMeshComponent* mesh, const std::vector<AActor*>& actors) {
 	auto it = m_meshDataMap.find(mesh);
@@ -435,7 +463,6 @@ void VulkanRenderer::RenderFrame() {
 
 bool VulkanRenderer::InitImGuiForVulkan(IWindow* window)
 {
-    // Create descriptor pool for ImGui (needs many types to be available)
     std::vector<vk::DescriptorPoolSize> poolSizes = {
         { vk::DescriptorType::eSampler, 1000 },
         { vk::DescriptorType::eCombinedImageSampler, 1000 },
@@ -459,8 +486,6 @@ bool VulkanRenderer::InitImGuiForVulkan(IWindow* window)
     g_imguiDescriptorPool = m_context->logicalDevice->GetHandle().createDescriptorPool(poolInfo);
 
 
-
-    // Vulkan init
     ImGui_ImplVulkan_InitInfo init_info = {};
     init_info.Instance = m_context->instance->GetInstance();
     init_info.PhysicalDevice = m_context->physicalDevice->GetHandle();

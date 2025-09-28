@@ -26,6 +26,7 @@ public:
              m_channels(channels),
              m_data(std::move(data)) {}
     const unsigned char* GetData() const { return m_data.data(); }
+    std::vector<unsigned char>& GetMutableData() { return m_data; }
     int GetWidth() const { return m_width; }
     int GetHeight() const { return m_height; }
     int GetChannels() const { return m_channels; }

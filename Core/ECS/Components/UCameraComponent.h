@@ -7,11 +7,12 @@
 #include <glm/gtc/quaternion.hpp>
 
 #include "Core/ECS/Components/UBaseComponent.h"
+#include "Core/Export.h"
 
 
 class UTransformComponent;
 
-class UCameraComponent : public UBaseComponent
+class VOXCORE_API UCameraComponent : public UBaseComponent
 {
 public:
     UCLASS(UCameraComponent);
@@ -27,12 +28,19 @@ public:
     void AddYawPitch(float yawOffset, float pitchOffset) {
         yaw += yawOffset;
         pitch += pitchOffset;
-        if (pitch > 89.0f) pitch = 89.0f;
-        if (pitch < -89.0f) pitch = -89.0f;
+        pitch = glm::clamp(pitch, -89.0f, 89.0f);
     }
     [[nodiscard]] glm::mat4 GetViewMatrix() const;
 
     [[nodiscard]] glm::mat4 GetProjectionMatrix() const;
 
     [[nodiscard]] glm::vec3 GetWorldPosition() const;
+    [[nodiscard]] glm::vec3 GetForwardVector() const {
+        glm::vec3 forward;
+        forward.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+        forward.y = sin(glm::radians(pitch));
+        forward.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+        return glm::normalize(forward);
+    }
+
 };

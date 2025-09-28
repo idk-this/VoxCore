@@ -18,6 +18,7 @@ public:
     std::vector<uint32_t> indices;
     std::vector<glm::vec3> colors;
     std::vector<glm::vec2> texCoords;
+    bool meshDirty = false;
     void SetCubeMesh() {
         float size = 1.0f;
 
