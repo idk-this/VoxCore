@@ -43,7 +43,7 @@ bool VoxPak::Open(const std::string& pakFile) {
         return true;
     }
     int modCount = 0;
-    std::filesystem::path modsPath(FileSystem::GetWorkingDirectory() + "Content/Mods");
+    std::filesystem::path modsPath(Engine::FileSystem::GetWorkingDirectory() + "Content/Mods");
     std::string pakName = std::filesystem::path(pakFile).stem().string();
 
     if (!std::filesystem::exists(modsPath) || !std::filesystem::is_directory(modsPath))

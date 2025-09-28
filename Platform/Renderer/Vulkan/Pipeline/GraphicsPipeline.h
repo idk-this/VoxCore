@@ -31,7 +31,7 @@ public:
     void SetPushConstantRange(vk::ShaderStageFlags stages, uint32_t offset, uint32_t size);
     void SetDescriptorSetLayouts(const std::vector<vk::DescriptorSetLayout>& layouts);
     vk::Pipeline& GetHandle() { return m_pipeline; }
-    void BindDescriptorSet(vk::CommandBuffer* cmd, vk::DescriptorSet descriptorSet);
+    void BindDescriptorSet(vk::CommandBuffer* cmd, vk::DescriptorSet descriptorSet) override;
 
 private:
 };

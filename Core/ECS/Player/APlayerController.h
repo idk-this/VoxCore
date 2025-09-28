@@ -10,7 +10,12 @@
 class APlayerController : public AController {
     UCLASS(APlayerController);
 public:
-    void SetPlayer(std::shared_ptr<UPlayer> player) { m_player = player; }
+    void SetPlayer(std::shared_ptr<UPlayer> player)
+    {
+
+        m_player = player;
+        player->SetController(this);
+    }
     std::shared_ptr<UPlayer> GetPlayer() const { return m_player; }
 
     virtual void Possess(std::shared_ptr<APawn> pawn) override {

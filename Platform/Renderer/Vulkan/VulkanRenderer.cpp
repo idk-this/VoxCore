@@ -56,12 +56,12 @@ VulkanRenderer::VulkanRenderer()
 	);
 	m_context->commandSystem   = std::make_unique<VulkanCommandSystem>(m_context.get());
 
-	if (!m_shaderPak.Open(FileSystem::GetWorkingDirectory() + "Content/Paks/VulkanShaders.voxpak"))
+	if (!m_shaderPak.Open(Engine::FileSystem::GetWorkingDirectory() + "Content/Paks/VulkanShaders.voxpak"))
 	{
 		LOG_FATAL("Vulkan", "Failed to open VulkanShaders.voxpak");
 	}
 
-	m_cameraUBO = std::make_unique<VulkanCameraUBO>(m_context->logicalDevice.get(), m_context->physicalDevice.get());
+	m_cameraUBO = std::make_unique<VulkanCameraUBO>(m_context.get());
 
 } ;
 VulkanRenderer::~VulkanRenderer() {
@@ -92,7 +92,7 @@ bool VulkanRenderer::Init(IWindow *window, UWorld* world) {
 	m_context->pipelines[PipelineType::Graphics]->SetShader(vulkanShader);
 	InitImGuiForVulkan(window);
 
-    m_cameraUBO->PreInit(dynamic_cast<GraphicsPipeline*>(m_context->pipelines[PipelineType::Graphics].get()));
+    m_cameraUBO->PreInit();
 	auto cameraLayout = m_cameraUBO->GetDescriptorSetLayout();
 
 	// --- Texture layout ---
@@ -136,6 +136,7 @@ bool VulkanRenderer::Init(IWindow *window, UWorld* world) {
 }
 
 void VulkanRenderer::BeginFrame() {
+	m_renderedVertices = 0;
 	m_context->logicalDevice->GetHandle().waitForFences(m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
 
 	m_context->swapchain->BeginRender(m_imageAvailableSemaphores[m_currentFrame]);
@@ -193,14 +194,14 @@ void VulkanRenderer::ProcessRender() {
             // Обновляем instance buffer для этого актора
             if (UpdateInstanceBuffer(mesh, {actor.get()})) {
                 vk::Buffer buffers[] = {
-                    meshDataIt->second.vertexBuffer.GetBuffer(),
-                    meshDataIt->second.instanceBuffer.GetBuffer()
+                    meshDataIt->second.vertexBuffer->GetBuffer(),
+                    meshDataIt->second.instanceBuffer->GetBuffer()
                 };
                 vk::DeviceSize offsets[] = {0, 0};
 
                 cmd.bindVertexBuffers(0, 2, buffers, offsets);
                 cmd.bindIndexBuffer(
-                    meshDataIt->second.indexBuffer.GetBuffer(),
+                    meshDataIt->second.indexBuffer->GetBuffer(),
                     0,
                     vk::IndexType::eUint32
                 );
@@ -236,6 +237,7 @@ void VulkanRenderer::ProcessRender() {
                     1,
                     0, 0, 0
                 );
+            	m_renderedVertices += meshDataIt->second.indexCount;
             }
         }
     }
@@ -250,6 +252,7 @@ void VulkanRenderer::ProcessRender() {
 		ImGui::Begin("Debug");
 		ImGui::Text("Vulkan + ImGui");
 		ImGui::Text("FPS: %.1f", 1.0f/ImGui::GetIO().DeltaTime);
+		ImGui::Text("Rendered vertices: %llu", m_renderedVertices);
 		ImGui::End();
 
 		Engine::GetCurrentContext().GetImGui()->Render(cmd);
@@ -292,15 +295,18 @@ void VulkanRenderer::PrepareMesh(UMeshComponent* mesh, const std::vector<AActor*
 	}
 
 
-	MeshRenderData data(m_context.get());
+	MeshRenderData data;
+	data.indexBuffer = std::make_unique<VulkanBuffer>(m_context.get());
+	data.vertexBuffer = std::make_unique<VulkanBuffer>(m_context.get());
+	data.instanceBuffer = std::make_unique<VulkanBuffer>(m_context.get());
 	data.indexCount = static_cast<uint32_t>(mesh->Mesh->indices.size());
 	data.instanceCount = static_cast<uint32_t>(actors.size());
 
-	data.vertexBuffer.Create(sizeof(Vertex) * vertices.size(), vk::BufferUsageFlagBits::eVertexBuffer);
-	data.vertexBuffer.UpdateBufferDataArray(vertices);
+	data.vertexBuffer->Create(sizeof(Vertex) * vertices.size(), vk::BufferUsageFlagBits::eVertexBuffer);
+	data.vertexBuffer->UpdateBufferDataArray(vertices);
 
-	data.indexBuffer.Create(sizeof(uint32_t) * mesh->Mesh->indices.size(), vk::BufferUsageFlagBits::eIndexBuffer);
-	data.indexBuffer.UpdateBufferDataArray(mesh->Mesh->indices);
+	data.indexBuffer->Create(sizeof(uint32_t) * mesh->Mesh->indices.size(), vk::BufferUsageFlagBits::eIndexBuffer);
+	data.indexBuffer->UpdateBufferDataArray(mesh->Mesh->indices);
 
 	std::vector<InstanceData> instances;
 	for (auto* actor : actors) {
@@ -311,8 +317,8 @@ void VulkanRenderer::PrepareMesh(UMeshComponent* mesh, const std::vector<AActor*
 		instances.push_back(inst);
 	}
 
-	data.instanceBuffer.Create(sizeof(InstanceData) * instances.size(), vk::BufferUsageFlagBits::eVertexBuffer);
-	data.instanceBuffer.UpdateBufferDataArray(instances);
+	data.instanceBuffer->Create(sizeof(InstanceData) * instances.size(), vk::BufferUsageFlagBits::eVertexBuffer);
+	data.instanceBuffer->UpdateBufferDataArray(instances);
 	if (mesh->Texture->GetData())
 	{
 		data.texture = std::make_unique<VulkanTexture>(m_context.get());
@@ -367,7 +373,7 @@ bool VulkanRenderer::UpdateInstanceBuffer(UMeshComponent* mesh, const std::vecto
 		}
 	}
 	if (needsUpdate || it->second.instanceCount != actors.size()) {
-		it->second.instanceBuffer.UpdateBufferDataArray(instances);
+		it->second.instanceBuffer->UpdateBufferDataArray(instances);
 		it->second.instanceCount = static_cast<uint32_t>(instances.size());
 		return true;
 	}
@@ -378,9 +384,9 @@ void VulkanRenderer::Cleanup() {
 	LOG_INFO("Vulkan", "Cleaning up Vulkan resources.");
 	m_context->logicalDevice->GetHandle().waitIdle();
 	for (auto& [mesh, data] : m_meshDataMap) {
-		data.vertexBuffer.Destroy();
-		data.indexBuffer.Destroy();
-		data.instanceBuffer.Destroy();
+		data.vertexBuffer->Destroy();
+		data.indexBuffer->Destroy();
+		data.instanceBuffer->Destroy();
 		data.texture.reset();
 		if (data.texturePool) {
 			m_context->logicalDevice->GetHandle().destroyDescriptorPool(data.texturePool);

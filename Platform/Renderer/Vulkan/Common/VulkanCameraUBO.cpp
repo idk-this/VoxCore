@@ -7,14 +7,14 @@
 #include "Platform/Renderer/Vulkan/Devices/LogicalDevice.h"
 #include "Platform/Renderer/Vulkan/Pipeline/GraphicsPipeline.h"
 
-VulkanCameraUBO::VulkanCameraUBO(LogicalDevice* logicalDevice, PhysicalDevice* physicalDevice)
+VulkanCameraUBO::VulkanCameraUBO(VulkanContext* context)
 {
-    m_cameraBuffer = new VulkanBuffer(logicalDevice, physicalDevice);
-    m_logicalDevice = logicalDevice;
+    m_cameraBuffer = new VulkanBuffer(context);
+    m_context = context;
 
 }
 
-bool VulkanCameraUBO::PreInit(GraphicsPipeline* pipeline)
+bool VulkanCameraUBO::PreInit()
 {
     vk::DescriptorSetLayoutBinding cameraLayoutBinding{};
     cameraLayoutBinding.binding = 0;
@@ -23,8 +23,7 @@ bool VulkanCameraUBO::PreInit(GraphicsPipeline* pipeline)
     cameraLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment;
     cameraLayoutBinding.pImmutableSamplers = nullptr;
     vk::DescriptorSetLayoutCreateInfo layoutInfo{{}, 1, &cameraLayoutBinding};
-    m_cameraDescriptorSetLayout = m_logicalDevice->GetHandle().createDescriptorSetLayout(layoutInfo);
-    m_graphicsPipeline = pipeline;
+    m_cameraDescriptorSetLayout = m_context->logicalDevice->GetHandle().createDescriptorSetLayout(layoutInfo);
     return true;
 }
 
@@ -32,7 +31,7 @@ bool VulkanCameraUBO::Init()
 {
     vk::DescriptorPoolSize poolSize{vk::DescriptorType::eUniformBuffer, 1};
     vk::DescriptorPoolCreateInfo poolInfo{{}, 1, 1, &poolSize};
-    m_cameraDescriptorPool = m_logicalDevice->GetHandle().createDescriptorPool(poolInfo);
+    m_cameraDescriptorPool = m_context->logicalDevice->GetHandle().createDescriptorPool(poolInfo);
 
     m_cameraBuffer->Create(
         m_cameraDescriptorSetLayout, m_cameraDescriptorPool, sizeof(CameraData),
@@ -45,5 +44,5 @@ bool VulkanCameraUBO::Init()
 void VulkanCameraUBO::Update(void* cmd, const CameraData& data)
 {
     m_cameraBuffer->UpdateBufferData(data);
-    m_graphicsPipeline->BindDescriptorSet((vk::CommandBuffer*)cmd, m_cameraDescriptorSet);
+    m_context->pipelines[PipelineType::Graphics]->BindDescriptorSet((vk::CommandBuffer*)cmd, m_cameraDescriptorSet);
 }

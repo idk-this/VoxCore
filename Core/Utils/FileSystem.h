@@ -9,9 +9,13 @@
 #include "Core/Export.h"
 
 
-class VOXCORE_API FileSystem {
+namespace Engine
+{
+    class VOXCORE_API FileSystem {
 
-public:
-    static std::string GetWorkingDirectory();
-    static bool CreateFileIfNotExists(const std::string& filePath, const std::string& defaultContent = "");
-};
+    public:
+        static std::string GetWorkingDirectory();
+        static bool CreateFileIfNotExists(const std::string& filePath, const std::string& defaultContent = "");
+    };
+
+}

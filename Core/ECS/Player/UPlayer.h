@@ -4,22 +4,20 @@
 
 #pragma once
 
-#include <memory>
-
 
 class APlayerController;
 
 class UPlayer : public UObject {
     UCLASS(UPlayer);
 public:
-    void SetController(std::shared_ptr<APlayerController> controller) {
+    void SetController(APlayerController* controller) {
         m_controller = controller;
     }
 
-    std::shared_ptr<APlayerController> GetController() {
+    APlayerController* GetController() {
         return m_controller;
     }
 
 private:
-    std::shared_ptr<APlayerController> m_controller;
+    APlayerController* m_controller = nullptr;
 };

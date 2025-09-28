@@ -6,14 +6,17 @@
 #include "vulkan/vulkan.hpp"
 
 #include "Core/Export.h"
+#include "Platform/Renderer/Vulkan/Core/VulkanContext.h"
+#include "Platform/Renderer/Vulkan/Devices/LogicalDevice.h"
 
+struct VulkanContext;
 class LogicalDevice;
 class PhysicalDevice;
 
 class VOXCORE_API VulkanBuffer {
 
 public:
-    VulkanBuffer(LogicalDevice* logicalDevice, PhysicalDevice* physicalDevice);
+    VulkanBuffer(VulkanContext* ctx);
     ~VulkanBuffer() {};
     bool Create(vk::DescriptorSetLayout layout, vk::DescriptorPool pool, vk::DeviceSize size, vk::BufferUsageFlags usage, uint32_t binding);
     bool Create(vk::DeviceSize size, vk::BufferUsageFlags usage,
@@ -26,9 +29,9 @@ public:
 
     template<typename T>
     void UpdateBufferDataArray(const std::vector<T>& data) {
-        void* mapped = m_logicalDevice->GetHandle().mapMemory(m_memory, 0, sizeof(T) * data.size());
+        void* mapped = m_context->logicalDevice->GetHandle().mapMemory(m_memory, 0, sizeof(T) * data.size());
         std::memcpy(mapped, data.data(), sizeof(T) * data.size());
-        m_logicalDevice->GetHandle().unmapMemory(m_memory);
+        m_context->logicalDevice->GetHandle().unmapMemory(m_memory);
     }
 
     vk::DescriptorSet GetDescriptorSet() const {return m_descriptorSet; }
@@ -36,8 +39,7 @@ public:
     vk::Buffer& GetBuffer() { return m_buffer; }
 
 private:
-    LogicalDevice* m_logicalDevice;
-    PhysicalDevice* m_physicalDevice;
+    VulkanContext* m_context;
     vk::Buffer m_buffer;
     vk::DeviceMemory m_memory;
     vk::DescriptorBufferInfo m_bufferInfo;
@@ -47,7 +49,7 @@ private:
 template <typename T>
 void VulkanBuffer::UpdateBufferData(const T& data)
 {
-    void* mapped = m_logicalDevice->GetHandle().mapMemory(m_memory, 0, sizeof(T));
+    void* mapped = m_context->logicalDevice->GetHandle().mapMemory(m_memory, 0, sizeof(T));
     std::memcpy(mapped, &data, sizeof(T));
-    m_logicalDevice->GetHandle().unmapMemory(m_memory);
+    m_context->logicalDevice->GetHandle().unmapMemory(m_memory);
 }

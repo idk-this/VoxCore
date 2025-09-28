@@ -14,6 +14,8 @@
 #include <unistd.h>
 #endif
 
+using namespace Engine;
+
 std::string FileSystem::GetWorkingDirectory()
 {
     std::filesystem::path path;

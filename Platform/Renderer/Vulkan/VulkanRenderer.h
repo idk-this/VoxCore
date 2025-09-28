@@ -18,10 +18,11 @@
 #include "Common/VulkanTexture.h"
 #include "Pipeline/GraphicsPipeline.h"
 #include "Core/Export.h"
+#include "Core/VulkanContext.h"
 #include "Core/Common/VoxPak.h"
 
 
-struct VulkanTexture;
+
 class UMeshComponent;
 class AActor;
 class UMesh;
@@ -34,30 +35,11 @@ class VulkanSwapChain;
 class LogicalDevice;
 class PhysicalDevice;
 class IUISystem;
-struct VulkanContext {
-    std::unique_ptr<VulkanInstance> instance;
-    std::unique_ptr<PhysicalDevice> physicalDevice;
-    std::unique_ptr<LogicalDevice> logicalDevice;
-    std::unique_ptr<VulkanSwapChain> swapchain;
-    std::unique_ptr<VulkanRenderPass> renderPass;
-    std::unordered_map<PipelineType, std::unique_ptr<IShaderPipeline>> pipelines;
-    std::unique_ptr<VulkanCommandSystem> commandSystem;
-    vk::SurfaceKHR surface = nullptr;
-};
-struct MeshRenderData {
-    MeshRenderData(VulkanContext* context): vertexBuffer(context->logicalDevice.get(), context->physicalDevice.get()),
-    indexBuffer(context->logicalDevice.get(), context->physicalDevice.get()), instanceBuffer(context->logicalDevice.get(), context->physicalDevice.get())
-    {
 
-    }
-    MeshRenderData(const MeshRenderData&) = delete;
-    MeshRenderData& operator=(const MeshRenderData&) = delete;
-    MeshRenderData(MeshRenderData&&) = default;
-    MeshRenderData& operator=(MeshRenderData&&) = default;
-    ~MeshRenderData() = default;
-    VulkanBuffer vertexBuffer;
-    VulkanBuffer indexBuffer;
-    VulkanBuffer instanceBuffer;
+struct MeshRenderData {
+    std::unique_ptr<VulkanBuffer> vertexBuffer;
+    std::unique_ptr<VulkanBuffer> indexBuffer;
+    std::unique_ptr<VulkanBuffer> instanceBuffer;
     std::unique_ptr<VulkanTexture> texture;
     vk::DescriptorSet textureSet;
     vk::DescriptorPool texturePool;
@@ -93,6 +75,7 @@ private:
     std::vector<vk::Semaphore> m_renderFinishedSemaphores;
     std::vector<vk::Fence> m_inFlightFences;
     vk::DescriptorSetLayout m_textureLayout;
+    uint64_t m_renderedVertices = 0;
     std::chrono::high_resolution_clock::time_point m_startTime;
     void Cleanup() override;
     void RenderFrame() override;

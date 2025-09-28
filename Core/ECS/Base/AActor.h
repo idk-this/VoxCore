@@ -10,6 +10,7 @@
 #include "Core/ECS/Components/UBaseComponent.h"
 #include "Core/ECS/Systems/UBaseSystem.h"
 #include "Core/ECS/Components/UTransformComponent.h"
+#include "Structures/FObjectID.h"
 
 
 class AActor : public UObject {
@@ -52,7 +53,8 @@ public:
         }
         return nullptr;
     }
-
+    void SetObjectID(const FObjectID& id) { m_objectID = id; }
+    FObjectID GetObjectID() const { return m_objectID; }
     virtual void Update(float deltaTime) {
         for (auto& system : m_systems) {
             system->Update(deltaTime);
@@ -63,6 +65,7 @@ public:
     }
 
 protected:
+    FObjectID m_objectID;
     std::vector<std::shared_ptr<UBaseComponent>> m_components;
     std::vector<std::shared_ptr<UBaseSystem>> m_systems;
 };
