@@ -21,7 +21,9 @@ namespace Engine
         class VOXCORE_API ImageLoader {
             public:
                 static bool Load(const std::string& path, ImageData& outImage);
+                static bool Load(const std::vector<uint8_t>& data, ImageData& outImage);
                 static bool Load(const std::string& path, std::shared_ptr<UTexture>& outTex);
+                static bool Load(const std::vector<uint8_t>& data, std::shared_ptr<UTexture>& outTex);
         };
 
     }
