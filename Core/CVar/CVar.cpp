@@ -45,23 +45,37 @@ std::string CVarManager::GetDescription(const std::string& name) const {
     return "";
 }
 
-void CVarManager::Set(const std::string& name, const CVarValue& val) {
-    std::lock_guard<std::mutex> lock(mutex_);
+
+void CVarManager::Set(const std::string& name, const CVarValue& val, CVarSetSource source)
+{
+      std::lock_guard<std::mutex> lock(mutex_);
     auto it = vars.find(name);
     if (it == vars.end()) return;
 
     ConVarInstance& var = it->second;
-
-    if (var.flags & CVAR_READONLY) {
-        LOG_ERROR("CVar", "Cannot change READONLY variable: {}", name);
-        return;
+    if (source == CVarSetSource::Console) {
+        if (!(var.flags & CVAR_CONSOLE_EDIT)) {
+            LOG_ERROR("CVar", "Cannot change variable '{}' from console (no CVAR_CONSOLE_EDIT)", name);
+            return;
+        }
+        if (var.flags & CVAR_READONLY) {
+            LOG_ERROR("CVar", "Cannot change READONLY variable '{}' from console.", name);
+            return;
+        }
+        if ((var.flags & CVAR_CHEAT) && !GET_CVAR(bool, "sv_cheats")) {
+            LOG_ERROR("CVar", "{} can only be changed when cheats are enabled", name);
+            return;
+        }
+    } else {
+        if (var.flags & CVAR_READONLY) {
+            LOG_ERROR("CVar", "Cannot change READONLY variable: {}", name);
+            return;
+        }
+        if ((var.flags & CVAR_CHEAT) && !GET_CVAR(bool, "sv_cheats")) {
+            LOG_ERROR("CVar", "{} can only be changed when cheats are enabled", name);
+            return;
+        }
     }
-
-    if ((var.flags & CVAR_CHEAT) && !GET_CVAR(bool, "sv_cheats")) {
-        LOG_ERROR("CVar", "{} can only be changed when cheats are enabled", name);
-        return;
-    }
-
     if (var.minValue.has_value() || var.maxValue.has_value()) {
         if (val.index() != var.value.index()) {
             LOG_ERROR("CVar", "Type mismatch when setting {}", name);

@@ -14,7 +14,10 @@
 
 using CVarValue = std::variant<int, float, bool, std::string>;
 using CVarCallback = std::function<void(const CVarValue& oldValue, const CVarValue& newValue)>;
-
+enum class CVarSetSource {
+    Program = 0,
+    Console = 1
+};
 
 class VOXCORE_API ConVar {
 public:
@@ -61,8 +64,8 @@ struct VOXCORE_API ConVarInstance {
 class VOXCORE_API CVarManager {
 public:
     CVarManager(const std::vector<ConVar>& declaredVars);
+    void Set(const std::string& name, const CVarValue& val, CVarSetSource source = CVarSetSource::Program);
 
-    void Set(const std::string& name, const CVarValue& val);
     CVarValue Get(const std::string& name) const;
     std::string GetDescription(const std::string& name) const;
     ConVarInstance* Find(const std::string& name);

@@ -29,7 +29,6 @@ class AActor;
 class UMesh;
 class VulkanCommandSystem;
 class TrianglePipeline;
-class CommandSystem;
 class GraphicsPipeline;
 class VulkanRenderPass;
 class VulkanSwapChain;
@@ -37,16 +36,6 @@ class LogicalDevice;
 class PhysicalDevice;
 class IUISystem;
 
-struct MeshRenderData {
-    std::unique_ptr<VulkanBuffer> vertexBuffer;
-    std::unique_ptr<VulkanBuffer> indexBuffer;
-    std::unique_ptr<VulkanBuffer> instanceBuffer;
-    std::unique_ptr<VulkanTexture> texture;
-    vk::DescriptorSet textureSet;
-    vk::DescriptorPool texturePool;
-    uint32_t indexCount = 0;
-    uint32_t instanceCount = 0;
-};
 
 class VOXCORE_API VulkanRenderer : public IRenderer {
 public:
@@ -65,7 +54,6 @@ private:
     std::unique_ptr<VulkanContext> m_context;
     std::unique_ptr<VulkanCameraUBO> m_cameraUBO;
 
-    std::unordered_map<UMeshComponent*, MeshRenderData> m_meshDataMap;
     std::unordered_map<UMeshComponent*, std::shared_ptr<VulkanRenderObject>> m_meshDataMap2;
     bool InitImGuiForVulkan(IWindow* window);
     IWindow* m_window;
