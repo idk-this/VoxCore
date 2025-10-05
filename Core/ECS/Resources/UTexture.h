@@ -11,7 +11,7 @@
 #include "Core/Export.h"
 
 class VOXCORE_API UTexture : public UObject {
-    UCLASS(UTexture);
+    VClass(UTexture);
 public:
     ~UTexture();
 

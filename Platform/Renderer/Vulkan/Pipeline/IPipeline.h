@@ -34,8 +34,9 @@ public:
 
     virtual void SetShader(VulkanShader* shader) {m_shader = shader;};
     virtual void SetPushConstantRange(vk::ShaderStageFlags stages, uint32_t offset, uint32_t size) = 0;
-    virtual void SetDescriptorSetLayouts(const std::vector<vk::DescriptorSetLayout>& layouts) = 0;
+    virtual void AddDescriptorSetLayout(const vk::DescriptorSetLayout layout) = 0;
     virtual void BindDescriptorSet(vk::CommandBuffer* cmd, vk::DescriptorSet descriptorSet) = 0;
+    virtual vk::DescriptorSetLayout& GetDescriptorSetLayout(const uint32_t index){ return m_descriptorSetLayouts[index];}
 protected:
     VulkanShader* m_shader = nullptr;
     vk::PushConstantRange m_pushConstantRange{};

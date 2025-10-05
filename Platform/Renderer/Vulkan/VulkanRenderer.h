@@ -22,7 +22,8 @@
 #include "Core/Common/VoxPak.h"
 
 
-
+class VulkanResourceManager;
+class VulkanRenderObject;
 class UMeshComponent;
 class AActor;
 class UMesh;
@@ -53,11 +54,9 @@ public:
     ~VulkanRenderer() override;
     bool Init(IWindow* window, UWorld* world) override;
     void BeginFrame() override;
-    void ProcessRender();
+    void ProcessRender() override;
     void EndFrame() override;
     uint32_t GetCurrentFrame() const { return m_currentFrame; }
-    void PrepareMesh(UMeshComponent* mesh, const std::vector<AActor*>& actors);
-    bool UpdateInstanceBuffer(UMeshComponent* mesh, const std::vector<AActor*>& actors);
 
     [[nodiscard]] const std::unique_ptr<VulkanContext>& GetContext() const { return m_context; }
 private:
@@ -67,12 +66,16 @@ private:
     std::unique_ptr<VulkanCameraUBO> m_cameraUBO;
 
     std::unordered_map<UMeshComponent*, MeshRenderData> m_meshDataMap;
+    std::unordered_map<UMeshComponent*, std::shared_ptr<VulkanRenderObject>> m_meshDataMap2;
     bool InitImGuiForVulkan(IWindow* window);
     IWindow* m_window;
     VoxPak m_shaderPak;
 
     std::vector<vk::Semaphore> m_imageAvailableSemaphores;
     std::vector<vk::Semaphore> m_renderFinishedSemaphores;
+
+    std::unique_ptr<VulkanResourceManager> m_renderObjectManager;
+    std::unordered_map<UMeshComponent*, uint32_t> m_meshInstanceCounts;
     std::vector<vk::Fence> m_inFlightFences;
     vk::DescriptorSetLayout m_textureLayout;
     uint64_t m_renderedVertices = 0;

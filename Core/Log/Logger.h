@@ -17,6 +17,7 @@ enum class LogLevel {
     Info,
     Warn,
     Error,
+    Debug,
     Fatal
 };
 struct ChannelConfig {
@@ -63,6 +64,7 @@ public:
                 case LogLevel::Info:  return "INFO";
                 case LogLevel::Warn:  return "WARN";
                 case LogLevel::Error: return "ERROR";
+                case LogLevel::Debug: return "DEBUG";
                 case LogLevel::Fatal: return "FATAL";
                 default: return "UNKNOWN";
             }
@@ -78,6 +80,8 @@ public:
             case LogLevel::Warn:  level_color = "33m"; // Yellow
             break;
             case LogLevel::Error: level_color = "31m"; // Red
+            break;
+            case LogLevel::Debug: level_color = "35m"; // Purple
             break;
             case LogLevel::Fatal: level_color = "1;31m"; // Bold Red
             break;
@@ -151,6 +155,9 @@ Engine::Application::Get()->GetLogSystem().log(LogLevel::Warn, channel, std::sou
 
 #define LOG_ERROR(channel, fmt, ...) \
 Engine::Application::Get()->GetLogSystem().log(LogLevel::Error, channel, std::source_location::current(), fmt, ##__VA_ARGS__)
+
+#define LOG_DEBUG(channel, fmt, ...) \
+Engine::Application::Get()->GetLogSystem().log(LogLevel::Debug, channel, std::source_location::current(), fmt, ##__VA_ARGS__)
 
 #define LOG_FATAL(channel, fmt, ...) \
 Engine::Application::Get()->GetLogSystem().log(LogLevel::Fatal, channel, std::source_location::current(), fmt, ##__VA_ARGS__)

@@ -12,6 +12,7 @@
 #include <SDL3/SDL.h>
 #include <sstream>
 
+#include "imgui.h"
 #include "../Core/CVar/CVar.h"
 #include "../Core/Log/Logger.h"
 #include "Core/ECS/Base/UWorld.h"
@@ -35,7 +36,7 @@ Application::Application()
 };
 
 class LocalPlayer : public AActor {
-    UCLASS(LocalPlayer);
+    GENERATED_BODY();
 public:
     LocalPlayer() {
         AddComponent(std::make_shared<UTransformComponent>());
@@ -84,6 +85,9 @@ void Application::MainLoop() {
         float dt = std::chrono::duration<float>(now - lastTime).count();
         lastTime = now;
         window->PollEvents();
+        Engine::GetCurrentContext().GetImGui()->NewFrameGraphics();
+        Engine::GetCurrentContext().GetImGui()->NewFrameWindow();
+        ImGui::NewFrame();
         Update(dt);
         renderer->RenderFrame();
         window->SwapBuffers();

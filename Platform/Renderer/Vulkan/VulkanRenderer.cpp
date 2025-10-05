@@ -35,6 +35,9 @@
 #include "backends/imgui_impl_vulkan.h"
 #include <SDL3/SDL_vulkan.h>
 
+#include "Core/VulkanRenderObject.h"
+#include "Core/VulkanResourceManager.h"
+
 DECLARE_CONVAR_MINMAX("r_max_frames_in_flight", 2, 1, 4, "Maximum number of frames in flight for swapchain", CVAR_ARCHIVE);
 
 static vk::DescriptorPool g_imguiDescriptorPool = {};
@@ -62,6 +65,7 @@ VulkanRenderer::VulkanRenderer()
 	}
 
 	m_cameraUBO = std::make_unique<VulkanCameraUBO>(m_context.get());
+	m_renderObjectManager = std::make_unique<VulkanResourceManager>(m_context.get());
 
 } ;
 VulkanRenderer::~VulkanRenderer() {
@@ -107,11 +111,9 @@ bool VulkanRenderer::Init(IWindow *window, UWorld* world) {
 	samplerLayoutInfo.pBindings = &samplerLayoutBinding;
 
 	m_textureLayout = m_context->logicalDevice->GetHandle().createDescriptorSetLayout(samplerLayoutInfo);
+	m_context->pipelines[PipelineType::Graphics]->AddDescriptorSetLayout(cameraLayout);
+	m_context->pipelines[PipelineType::Graphics]->AddDescriptorSetLayout(m_textureLayout);
 
-	m_context->pipelines[PipelineType::Graphics]->SetDescriptorSetLayouts({
-		cameraLayout,
-		m_textureLayout
-	});
 
 	m_context->pipelines[PipelineType::Graphics]->Init();
 	m_context->swapchain->CreateFramebuffers(m_context->renderPass.get());
@@ -131,6 +133,7 @@ bool VulkanRenderer::Init(IWindow *window, UWorld* world) {
 		m_renderFinishedSemaphores[i] = m_context->logicalDevice->GetHandle().createSemaphore({});
 	}
 	m_world = world;
+	m_renderObjectManager->Initialize();
 	return true;
 }
 
@@ -158,7 +161,6 @@ void VulkanRenderer::ProcessRender() {
         m_cameraUBO->Update(&cmd, camera_data);
     }
 
-    // Очистка
     std::array<vk::ClearValue, 2> clearValues{};
     clearValues[0].color = { 0.1f, 0.1f, 0.1f, 1.0f };
     clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
@@ -173,78 +175,9 @@ void VulkanRenderer::ProcessRender() {
 
     cmd.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
     cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_context->pipelines[PipelineType::Graphics]->GetPipeline());
-
-    if (m_world) {
-        auto actors = m_world->GetActors();
-
-        for (auto& actor : actors) {
-            auto mesh = actor->GetComponent<UMeshComponent>();
-            if (!mesh) continue;
-
-            auto meshDataIt = m_meshDataMap.find(mesh);
-            if (meshDataIt == m_meshDataMap.end()) {
-                PrepareMesh(mesh, {actor.get()});
-                meshDataIt = m_meshDataMap.find(mesh);
-            }
-        	if (mesh->Mesh->meshDirty) {
-        		PrepareMesh(mesh, {actor.get()});
-        		mesh->Mesh->meshDirty = false;
-        		meshDataIt = m_meshDataMap.find(mesh);
-        	}
-            if (UpdateInstanceBuffer(mesh, {actor.get()})) {
-                vk::Buffer buffers[] = {
-                    meshDataIt->second.vertexBuffer->GetBuffer(),
-                    meshDataIt->second.instanceBuffer->GetBuffer()
-                };
-                vk::DeviceSize offsets[] = {0, 0};
-
-                cmd.bindVertexBuffers(0, 2, buffers, offsets);
-                cmd.bindIndexBuffer(
-                    meshDataIt->second.indexBuffer->GetBuffer(),
-                    0,
-                    vk::IndexType::eUint32
-                );
-
-                if (meshDataIt->second.textureSet) {
-                    std::array<vk::DescriptorSet, 2> sets = {
-                        m_cameraUBO->GetDescriptorSet(),
-                        meshDataIt->second.textureSet
-                    };
-                    cmd.bindDescriptorSets(
-                        vk::PipelineBindPoint::eGraphics,
-                        m_context->pipelines[PipelineType::Graphics]->GetLayout(),
-                        0,
-                        static_cast<uint32_t>(sets.size()),
-                        sets.data(),
-                        0, nullptr
-                    );
-                } else {
-                    cmd.bindDescriptorSets(
-                        vk::PipelineBindPoint::eGraphics,
-                        m_context->pipelines[PipelineType::Graphics]->GetLayout(),
-                        0,
-                        1,
-                        &m_cameraUBO->GetDescriptorSet(),
-                        0, nullptr
-                    );
-                }
-
-                cmd.drawIndexed(
-                    meshDataIt->second.indexCount,
-                    1,
-                    0, 0, 0
-                );
-            	m_renderedVertices += meshDataIt->second.indexCount;
-            }
-        }
-    }
-
+	m_renderObjectManager->UpdateWorldState(m_world);
+	m_renderObjectManager->RenderObjects(cmd, m_cameraUBO.get(), m_currentFrame);
 	if (g_imguiInitialized) {
-
-		Engine::GetCurrentContext().GetImGui()->NewFrameGraphics();
-		Engine::GetCurrentContext().GetImGui()->NewFrameWindow();
-
-		ImGui::NewFrame();
 
 		ImGui::Begin("Debug");
 		ImGui::Text("Vulkan + ImGui");
@@ -274,9 +207,10 @@ void VulkanRenderer::ProcessRender() {
 				thickness
 			);
 		}
-		Engine::GetCurrentContext().GetImGui()->Render(cmd);
 
+		Engine::GetCurrentContext().GetImGui()->Render(cmd);
 	}
+
     cmd.endRenderPass();
     cmd.end();
 }
@@ -300,127 +234,13 @@ void VulkanRenderer::EndFrame() {
 	m_currentFrame = (m_currentFrame + 1) % GET_CVAR(int, "r_max_frames_in_flight");
 }
 
-void VulkanRenderer::PrepareMesh(UMeshComponent* mesh, const std::vector<AActor*>& actors)
-{
-	if (mesh->Mesh->vertices.empty()) return;
-	// Vertex buffer
-	std::vector<Vertex> vertices;
-	vertices.reserve(mesh->Mesh->vertices.size());
 
-	for (size_t i = 0; i < mesh->Mesh->vertices.size(); ++i) {
-		glm::vec3 color = (i < mesh->Mesh->colors.size()) ? mesh->Mesh->colors[i] : glm::vec3(1.0f);
-		glm::vec2 uv = (i < mesh->Mesh->texCoords.size()) ? mesh->Mesh->texCoords[i] : glm::vec2(0.0f, 0.0f);
-		vertices.push_back( Vertex{ mesh->Mesh->vertices[i], color, uv } );
-	}
-
-
-	MeshRenderData data;
-	data.indexBuffer = std::make_unique<VulkanBuffer>(m_context.get());
-	data.vertexBuffer = std::make_unique<VulkanBuffer>(m_context.get());
-	data.instanceBuffer = std::make_unique<VulkanBuffer>(m_context.get());
-	data.indexCount = static_cast<uint32_t>(mesh->Mesh->indices.size());
-	data.instanceCount = static_cast<uint32_t>(actors.size());
-
-	data.vertexBuffer->Create(sizeof(Vertex) * vertices.size(), vk::BufferUsageFlagBits::eVertexBuffer);
-	data.vertexBuffer->UpdateBufferDataArray(vertices);
-
-	data.indexBuffer->Create(sizeof(uint32_t) * mesh->Mesh->indices.size(), vk::BufferUsageFlagBits::eIndexBuffer);
-	data.indexBuffer->UpdateBufferDataArray(mesh->Mesh->indices);
-
-	std::vector<InstanceData> instances;
-	for (auto* actor : actors) {
-		InstanceData inst{};
-		auto transform = actor->GetComponent<UTransformComponent>();
-		inst.model = transform ? transform->GetTransformMatrix() : glm::mat4(1.0f);
-		inst.color = glm::vec3(1.0f);
-		instances.push_back(inst);
-	}
-
-	data.instanceBuffer->Create(sizeof(InstanceData) * instances.size(), vk::BufferUsageFlagBits::eVertexBuffer);
-	data.instanceBuffer->UpdateBufferDataArray(instances);
-	if (mesh->Texture->GetData())
-	{
-		data.texture = std::make_unique<VulkanTexture>(m_context.get());
-		data.texture->UploadFromCPU(mesh->Texture.get());
-		vk::DescriptorPoolSize poolSize(vk::DescriptorType::eCombinedImageSampler, 1);
-		vk::DescriptorPoolCreateInfo poolInfo({}, 1, 1, &poolSize);
-		data.texturePool = m_context->logicalDevice->GetHandle().createDescriptorPool(poolInfo);
-
-		vk::DescriptorSetAllocateInfo allocInfo(data.texturePool, 1, &m_textureLayout);
-		data.textureSet = m_context->logicalDevice->GetHandle().allocateDescriptorSets(allocInfo).front();
-
-		vk::DescriptorImageInfo imageInfo{};
-		imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		imageInfo.imageView   = data.texture->GetImageView();
-		imageInfo.sampler     = data.texture->GetSampler();
-
-		vk::WriteDescriptorSet descriptorWrite{};
-		descriptorWrite.dstSet = data.textureSet;
-		descriptorWrite.dstBinding = 0;
-		descriptorWrite.dstArrayElement = 0;
-		descriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		descriptorWrite.descriptorCount = 1;
-		descriptorWrite.pImageInfo = &imageInfo;
-
-		m_context->logicalDevice->GetHandle().updateDescriptorSets(1, &descriptorWrite, 0, nullptr);
-
-	}else {
-		data.texture = nullptr;
-		data.textureSet = nullptr;
-	}
-	auto it = m_meshDataMap.find(mesh);
-	if (it != m_meshDataMap.end()) {
-		it->second.vertexBuffer->Destroy();
-		it->second.indexBuffer->Destroy();
-		it->second.instanceBuffer->Destroy();
-		if (it->second.texturePool) {
-			m_context->logicalDevice->GetHandle().destroyDescriptorPool(it->second.texturePool);
-		}
-		it->second = std::move(data);
-	} else {
-		m_meshDataMap.emplace(mesh, std::move(data));
-	}
-	//m_meshDataMap.emplace(mesh, std::move(data));
-}
-bool VulkanRenderer::UpdateInstanceBuffer(UMeshComponent* mesh, const std::vector<AActor*>& actors) {
-	auto it = m_meshDataMap.find(mesh);
-	if (it == m_meshDataMap.end()) return false;
-
-	bool needsUpdate = false;
-	std::vector<InstanceData> instances;
-
-	for (auto* actor : actors) {
-		InstanceData inst{};
-		auto transform = actor->GetComponent<UTransformComponent>();
-		inst.model = transform ? transform->GetTransformMatrix() : glm::mat4(1.0f);
-		inst.color = glm::vec3(1.0f);
-		instances.push_back(inst);
-
-		if (!needsUpdate && transform) {
-			needsUpdate = true;
-		}
-	}
-	if (needsUpdate || it->second.instanceCount != actors.size()) {
-		it->second.instanceBuffer->UpdateBufferDataArray(instances);
-		it->second.instanceCount = static_cast<uint32_t>(instances.size());
-		return true;
-	}
-
-	return false;
-}
 void VulkanRenderer::Cleanup() {
 	LOG_INFO("Vulkan", "Cleaning up Vulkan resources.");
 	m_context->logicalDevice->GetHandle().waitIdle();
-	for (auto& [mesh, data] : m_meshDataMap) {
-		data.vertexBuffer->Destroy();
-		data.indexBuffer->Destroy();
-		data.instanceBuffer->Destroy();
-		data.texture.reset();
-		if (data.texturePool) {
-			m_context->logicalDevice->GetHandle().destroyDescriptorPool(data.texturePool);
-		}
-	}
-	m_meshDataMap.clear();
+	m_renderObjectManager->Cleanup();
+	m_renderObjectManager.reset();
+	m_meshDataMap2.clear();
 	Engine::GetCurrentContext().GetImGui()->Shutdown();
 	m_context->commandSystem.reset();
 	m_context->swapchain.reset();

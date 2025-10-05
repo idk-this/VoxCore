@@ -50,7 +50,7 @@ public:
     virtual FAABB GetBoundingBox() {
         auto transform = GetComponent<UTransformComponent>();
         glm::vec3 pos = transform ? transform->position : glm::vec3(0.0f);
-        float half = 0.5f; // дефолтный размер актёра (1×1×1)
+        float half = 0.5f;
         return { pos - glm::vec3(half), pos + glm::vec3(half) };
     }
     template<typename T>

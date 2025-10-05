@@ -8,6 +8,8 @@
 #include "Core/Log/Logger.h"
 #include "Platform/Renderer/Vulkan/VulkanRenderer.h"
 #include "Platform/Renderer/Vulkan/Commands/VulkanCommandSystem.h"
+#include "Platform/Renderer/Vulkan/Devices/LogicalDevice.h"
+#include "Platform/Renderer/Vulkan/Devices/PhysicalDevice.h"
 
 VulkanTexture::~VulkanTexture()
 {

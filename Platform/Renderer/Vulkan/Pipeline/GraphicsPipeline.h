@@ -28,8 +28,8 @@ public:
     bool Init() override;
     void Bind(void* cmdBuffer) const override {};
     void Cleanup() override;
-    void SetPushConstantRange(vk::ShaderStageFlags stages, uint32_t offset, uint32_t size);
-    void SetDescriptorSetLayouts(const std::vector<vk::DescriptorSetLayout>& layouts);
+    void SetPushConstantRange(vk::ShaderStageFlags stages, uint32_t offset, uint32_t size) override;
+    void AddDescriptorSetLayout(const vk::DescriptorSetLayout layout) override;
     vk::Pipeline& GetHandle() { return m_pipeline; }
     void BindDescriptorSet(vk::CommandBuffer* cmd, vk::DescriptorSet descriptorSet) override;
 

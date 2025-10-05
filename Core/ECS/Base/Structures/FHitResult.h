@@ -14,5 +14,6 @@ struct FHitResult {
     bool bHit = false;
     std::shared_ptr<AActor> HitActor = nullptr;
     glm::vec3 HitLocation{};
+
     float Distance = std::numeric_limits<float>::max();
 };

@@ -16,7 +16,7 @@ ImGuiWrapper::ImGuiWrapper(ImGuiBackendGraphicsAPI graphics_api, ImGuiBackendWin
       m_wndAPI(window_api)
 {
     IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
+    m_context = ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;

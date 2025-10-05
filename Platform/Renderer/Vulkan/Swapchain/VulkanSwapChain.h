@@ -31,6 +31,7 @@ public:
         return m_imageRenderIndex;
     }
     uint32_t AcquireNextImage(vk::Semaphore imageAvailableSemaphore);
+    vk::RenderPassBeginInfo GetRenderPassBeginInfo();
 
 private:
     VulkanContext* m_context;

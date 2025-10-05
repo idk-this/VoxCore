@@ -37,10 +37,11 @@ public:
     vk::DescriptorSet GetDescriptorSet() const {return m_descriptorSet; }
     void BindBuffer(vk::CommandBuffer* cmd);
     vk::Buffer& GetBuffer() { return m_buffer; }
-
+    vk::DeviceSize GetSize() const { return m_size; }
 private:
     VulkanContext* m_context;
     vk::Buffer m_buffer;
+    vk::DeviceSize m_size;
     vk::DeviceMemory m_memory;
     vk::DescriptorBufferInfo m_bufferInfo;
     vk::DescriptorSet m_descriptorSet;

@@ -9,7 +9,7 @@
 
 class ULocalPlayer : public UPlayer
 {
-    UCLASS(ULocalPlayer)
+    UCLASS(ULocalPlayer);
 
 public:
     virtual ~ULocalPlayer() = default;

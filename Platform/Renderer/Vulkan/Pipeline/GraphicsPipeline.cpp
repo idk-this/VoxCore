@@ -48,7 +48,7 @@ bool GraphicsPipeline::Init() {
     vk::Rect2D scissor({0, 0}, m_context->swapchain->GetSwapExtent());
     vk::PipelineViewportStateCreateInfo viewportState({}, 1, &viewport, 1, &scissor);
     vk::PipelineRasterizationStateCreateInfo rasterizer({}, false, false,
-                     vk::PolygonMode::eFill, vk::CullModeFlagBits::eFront, vk::FrontFace::eClockwise);
+                     vk::PolygonMode::eFill, vk::CullModeFlagBits::eNone, vk::FrontFace::eClockwise);
     rasterizer.setLineWidth(1.0f);
     vk::PipelineMultisampleStateCreateInfo multisampling({}, vk::SampleCountFlagBits::e1);
     vk::PipelineColorBlendAttachmentState colorBlendAttachment{};
@@ -93,10 +93,10 @@ void GraphicsPipeline::SetPushConstantRange(vk::ShaderStageFlags stages, uint32_
     m_pushConstantRange = vk::PushConstantRange(stages, offset, size);
 }
 
-void GraphicsPipeline::SetDescriptorSetLayouts(const std::vector<vk::DescriptorSetLayout> &layouts) {
-    m_descriptorSetLayouts = layouts;
+void GraphicsPipeline::AddDescriptorSetLayout(const vk::DescriptorSetLayout layout)
+{
+    m_descriptorSetLayouts.push_back(layout);
 }
-
 void GraphicsPipeline::BindDescriptorSet(vk::CommandBuffer* cmd, vk::DescriptorSet descriptorSet)
 {
     cmd->bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);

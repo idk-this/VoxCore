@@ -55,6 +55,7 @@ public:
             system->Update(deltaTime);
         }
         for (auto& actor : m_actors) {
+            if (!actor) continue;
             actor->Update(deltaTime);
         }
     }
@@ -97,6 +98,7 @@ public:
                     result.HitLocation = start + dir * travelT;
                     result.Distance = travelT;
                 }
+
             }
         }
 
@@ -112,7 +114,6 @@ private:
                        const glm::vec3& boxMax,
                        float& tmin, float& tmax) const
     {
-        // Если начало внутри бокса → сразу хит
         if (rayOrigin.x >= boxMin.x && rayOrigin.x <= boxMax.x &&
             rayOrigin.y >= boxMin.y && rayOrigin.y <= boxMax.y &&
             rayOrigin.z >= boxMin.z && rayOrigin.z <= boxMax.z)

@@ -7,6 +7,8 @@
 #include <iostream>
 #include <stdexcept>
 
+struct ImGuiContext;
+
 enum class ImGuiBackendGraphicsAPI
 {
     None,
@@ -32,7 +34,7 @@ public:
     void InitGraphics(std::any info);
     void InitWindow(void* windowHandle = nullptr);
     void SetupStyle();
-
+    ImGuiContext* GetContext() { return m_context;}
     void NewFrameGraphics();
     void NewFrameWindow();
     void PollEvents(std::any event);
@@ -41,6 +43,7 @@ public:
     void Shutdown();
 
 private:
+    ImGuiContext* m_context;
     ImGuiBackendGraphicsAPI m_gfxAPI;
     ImGuiBackendWindowAPI   m_wndAPI;
 };

@@ -54,6 +54,7 @@ bool VulkanBuffer::Create(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::M
 
     m_memory = m_context->logicalDevice->GetHandle().allocateMemory(allocInfo);
     m_context->logicalDevice->GetHandle().bindBufferMemory(m_buffer, m_memory, 0);
+    m_size = size;
 
     return true;
 }

@@ -9,7 +9,7 @@ class AActor;
 class UBaseComponent;
 
 class UBaseSystem : public UObject {
-    UCLASS(UBaseSystem);
+    GENERATED_BODY();
 public:
     UBaseSystem() = default;
     virtual ~UBaseSystem() = default;
