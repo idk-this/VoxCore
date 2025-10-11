@@ -47,6 +47,8 @@ bool VulkanRenderObject::CreateBuffers(const std::vector<glm::vec3>& vertices,
                                        const std::vector<glm::vec3>& colors,
                                        const std::vector<glm::vec2>& texCoords) {
     try {
+        LOG_DEBUG("Vulkan", "Initializing VulkanRenderObject for mesh, vertices={}, indices={}",
+          vertices.size(), indices.size());
         std::vector<Vertex> vertexData;
         vertexData.reserve(vertices.size());
 

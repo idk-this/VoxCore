@@ -32,8 +32,6 @@ glm::mat4 UCameraComponent::GetViewMatrix() const
     auto* transform = m_owner->GetComponent<UTransformComponent>();
     glm::vec3 front = transform ? transform->GetForwardVector() : glm::vec3(0.0f, 0.0f, -1.0f);
     glm::vec3 up = transform ? transform->GetUpVector() : glm::vec3(0.0f, 1.0f, 0.0f);
-    glm::vec3 forward = orientation * glm::vec3(0, 0, 1);
-    //glm::vec3 up      = orientation * glm::vec3(0, 1, 0);
 
     return glm::lookAt(worldPos, worldPos + front, up);
 }

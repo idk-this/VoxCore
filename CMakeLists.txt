@@ -20,6 +20,7 @@ set(LIBS_SRC "${CMAKE_CURRENT_SOURCE_DIR}/runtime_libs")
 set(LIBS_DST "${CMAKE_BINARY_DIR}/$<CONFIG>/Engine")
 
 add_subdirectory(libs/googletest)
+add_subdirectory(libs/pugixml)
 
 set(SDL_STATIC ON CACHE BOOL "" FORCE)
 add_subdirectory(libs/SDL)
@@ -74,6 +75,7 @@ target_include_directories(VoxCore PUBLIC
         libs/SDL/include
         ${Vulkan_INCLUDE_DIRS}
         "$ENV{VULKAN_SDK}/Include"
+        libs/pugixml/src
 
 )
 
@@ -81,6 +83,7 @@ target_link_libraries(VoxCore PRIVATE
         imgui
         SDL3-static
         Vulkan::Vulkan
+        pugixml
 )
 
 

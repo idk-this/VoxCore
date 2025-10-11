@@ -188,7 +188,7 @@ void VulkanResourceManager::OnActorSpawn(AActor* actor) {
 void VulkanResourceManager::OnActorDestroy(AActor* actor) {
     if (!actor) return;
 
-    LOG_DEBUG("Vulkan", "Actor destroyed: {}", actor->GetName());
+   // LOG_DEBUG("Vulkan", "Actor destroyed: {}", actor->GetName());
 
     auto it = m_actorRenderData.find(actor);
     if (it != m_actorRenderData.end()) {

@@ -19,13 +19,30 @@
 #include "Core/ECS/Components/UCameraComponent.h"
 #include "Core/ECS/Components/UTransformComponent.h"
 #include "Core/ECS/Components/UMeshComponent.h"
+#include "Core/UI/Designer/DataBinding.h"
+#include "Core/UI/Designer/XMLParser.h"
 #include "Core/Utils/FileSystem.h"
 #include "Platform/Window/Components/WindowInputComponent.h"
 
 using namespace Engine;
 Engine::Application* Engine::Application::m_instance = nullptr;
 
+class MyDataContext : public UISystem::SimpleDataContext {
+public:
+    MyDataContext() {
+        SetProperty("title", "My Application");
+        SetProperty("counter", "0");
 
+        BindEvent("IncrementCounter", [this]() {
+            int count = std::stoi(GetProperty("counter"));
+            SetProperty("counter", std::to_string(count + 1));
+        });
+
+        BindEvent("PrintHello", []() {
+            std::cout << "Hello from button!" << std::endl;
+        });
+    }
+};
 Application::Application()
 {
 
@@ -36,7 +53,7 @@ Application::Application()
 };
 
 class LocalPlayer : public AActor {
-    GENERATED_BODY();
+    UCLASS(localPlayer);
 public:
     LocalPlayer() {
         AddComponent(std::make_shared<UTransformComponent>());
@@ -80,6 +97,11 @@ void Application::MainLoop() {
     auto lastTime = std::chrono::high_resolution_clock::now();
     int frameCount = 0;
     float fpsTimer = 0.0f;
+    auto dataContext = std::make_shared<MyDataContext>();
+
+    // Парсинг UI из XML
+    UISystem::XMLUIParser parser;
+    auto uiRoot = parser.ParseUIFile("text_ui.xml", dataContext.get());
     while (!window->ShouldClose()) {
         auto now = std::chrono::high_resolution_clock::now();
         float dt = std::chrono::duration<float>(now - lastTime).count();
@@ -88,6 +110,9 @@ void Application::MainLoop() {
         Engine::GetCurrentContext().GetImGui()->NewFrameGraphics();
         Engine::GetCurrentContext().GetImGui()->NewFrameWindow();
         ImGui::NewFrame();
+        if (uiRoot) {
+            uiRoot->Render();
+        }
         Update(dt);
         renderer->RenderFrame();
         window->SwapBuffers();
