@@ -31,14 +31,44 @@ class MyDataContext : public UISystem::SimpleDataContext {
 public:
     MyDataContext() {
         SetProperty("title", "My Application");
-        SetProperty("counter", "0");
-
-        BindEvent("IncrementCounter", [this]() {
-            int count = std::stoi(GetProperty("counter"));
-            SetProperty("counter", std::to_string(count + 1));
+        SetProperty("Counter", "0");
+        SetProperty("UserName", "John Doe");
+        BindEvent("OnIncrement", [this]() {
+            int count = std::stoi(GetProperty("Counter"));
+            SetProperty("Counter", std::to_string(count + 1));
         });
+        BindEvent("OnDecrement", [this]() {
+            int count = std::stoi(GetProperty("Counter"));
+            SetProperty("Counter", std::to_string(count - 1));
+        });
+        BindEvent("OnReset", [this]() {
+           SetProperty("Counter", std::to_string(0));
+       });
 
-        BindEvent("PrintHello", []() {
+        BindEvent("OnHello", []() {
+            std::cout << "Hello from button!" << std::endl;
+        });
+    }
+};
+class HudContext : public UISystem::SimpleDataContext {
+public:
+    HudContext() {
+        SetProperty("title", "My Application");
+        SetProperty("Counter", "0");
+        SetProperty("UserName", "John Doe");
+        BindEvent("OnIncrement", [this]() {
+            int count = std::stoi(GetProperty("Counter"));
+            SetProperty("Counter", std::to_string(count + 1));
+        });
+        BindEvent("OnDecrement", [this]() {
+            int count = std::stoi(GetProperty("Counter"));
+            SetProperty("Counter", std::to_string(count - 1));
+        });
+        BindEvent("OnReset", [this]() {
+           SetProperty("Counter", std::to_string(0));
+       });
+
+        BindEvent("OnHello", []() {
             std::cout << "Hello from button!" << std::endl;
         });
     }
@@ -98,10 +128,12 @@ void Application::MainLoop() {
     int frameCount = 0;
     float fpsTimer = 0.0f;
     auto dataContext = std::make_shared<MyDataContext>();
+    auto hudContext = std::make_shared<HudContext>();
 
-    // Парсинг UI из XML
     UISystem::XMLUIParser parser;
-    auto uiRoot = parser.ParseUIFile("text_ui.xml", dataContext.get());
+    auto uiRoot = parser.ParseUIFile("Content/test_ui.xml", dataContext.get());
+    UISystem::XMLUIParser hud;
+    auto hudRoot = hud.ParseUIFile("Content/test_hud.xml", hudContext.get());
     while (!window->ShouldClose()) {
         auto now = std::chrono::high_resolution_clock::now();
         float dt = std::chrono::duration<float>(now - lastTime).count();
@@ -112,6 +144,10 @@ void Application::MainLoop() {
         ImGui::NewFrame();
         if (uiRoot) {
             uiRoot->Render();
+        }
+        if (hudRoot)
+        {
+            hudRoot->Render();
         }
         Update(dt);
         renderer->RenderFrame();

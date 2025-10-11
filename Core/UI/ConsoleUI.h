@@ -161,9 +161,6 @@ public:
     void CopySelected();
     void CopyAll();
 
-    // Filtering
-    void SetFilter(const std::string& filter);
-
     // Auto-complete
     std::vector<std::string> GetAutoCompleteSuggestions(const std::string& input);
     void SetAutoCompleteEnabled(bool enabled) { m_autoCompleteEnabled = enabled; }
@@ -176,12 +173,8 @@ private:
     void HandleLineClick(size_t clickedIndex, bool ctrlDown, bool shiftDown);
     void ClearSelection();
 
-    bool IsLineFiltered(const ConsoleLine& line) const;
-    void ApplyFilter();
-
     static int InputCallback(ImGuiInputTextCallbackData* data);
 
-    // History navigation
     void NavigateHistory(int direction);
     void ResetHistoryNavigation();
 
@@ -192,21 +185,13 @@ private:
     int m_lastSelectedIndex = -1;
     bool m_scrollToBottom = true;
     bool m_autoScroll = true;
-    bool m_showTimestamps = false;
     bool m_autoCompleteEnabled = true;
 
-    // Filtering
-    char m_filterBuf[256] = {};
-    std::vector<std::string> m_sourceFilters;
-    std::vector<size_t> m_filteredIndices;
-    bool m_filterDirty = true;
 
-    // Auto-complete
     std::vector<ConsoleSystem::Suggestion> m_suggestions;
     int m_selectedSuggestion = -1;
     bool m_showSuggestions = false;
 
-    // History navigation
     int m_historyIndex = -1;
     std::string m_currentInput;
 
@@ -214,7 +199,5 @@ private:
     std::unique_ptr<ConsoleStreamBuf> m_streamBuf;
     std::unique_ptr<std::ostream> m_consoleStream;
 
-    // Style
     float m_alpha = 0.9f;
-    bool m_darkTheme = true;
 };

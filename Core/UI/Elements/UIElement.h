@@ -40,11 +40,10 @@ namespace UISystem {
 
         virtual void Render() = 0;
         virtual void Update() {}
-        virtual void ParseAttributes(const std::unordered_map<std::string, std::string>& attributes) = 0;
 
         void SetWidth(const UISize& width) { m_width = width; }
         void SetHeight(const UISize& height) { m_height = height; }
-        void SetDataContext(DataContext* dataContext) { m_dataContext = dataContext; }
+        virtual void SetDataContext(DataContext* dataContext) { m_dataContext = dataContext; }
         void SetParent(UIElement* parent) { m_parent = parent; }
 
         virtual void AddChild(std::shared_ptr<UIElement> child) {
@@ -72,6 +71,20 @@ namespace UISystem {
 
         const std::string& GetName() const { return m_name; }
         UISize GetWidth() const { return m_width; }
+        virtual UISize GetElementWidth() const
+        {
+            float availableWidth = m_width.value;
+            float buttonWidth = availableWidth;
+            if (HasAttribute("Width")) {
+                try {
+                    buttonWidth = std::stof(GetAttribute("Width"));
+                    if (buttonWidth > availableWidth)
+                        buttonWidth = availableWidth;
+                } catch (...) {}
+            }
+            return UISize(buttonWidth);
+
+        };
         UISize GetHeight() const { return m_height; }
         [[nodiscard]] std::vector<std::shared_ptr<UIElement>> GetChildren() const { return m_children; }
 

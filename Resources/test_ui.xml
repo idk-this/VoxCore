@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Window Name="MainWindow" Title="UI System Demo" Flags="NoCollapse" Width="800" Height="600">
+
+    <ColumnSystem Name="MainLayout" Columns="12" ColumnSpan="12">
+
+        <TextBlock Name="AppTitle" Text="UI System Demonstration" ColumnSpan="12"
+                   Style="Title" Color="30,144,255" Align="Center" Height="40"/>
+
+        <ColumnSystem Name="InfoPanel" Columns="6" ColumnSpan="12">
+            <TextBlock Name="UserLabel" Text="User:" ColumnSpan="2"/>
+            <TextBlock Name="UserName" Text="{Binding UserName}" ColumnSpan="4"/>
+
+            <TextBlock Name="CounterLabel" Text="Counter:" ColumnSpan="2"/>
+            <TextBlock Name="CounterValue" Text="{Binding Counter}" ColumnSpan="4"/>
+
+            <TextBlock Name="StatusLabel" Text="Status:" ColumnSpan="2"/>
+            <TextBlock Name="StatusText" Text="{Binding Status}" ColumnSpan="4"/>
+        </ColumnSystem>
+
+        <ColumnSystem Name="ControlPanel" Columns="6" ColumnSpan="12">
+            <Button Name="IncrementBtn" Text="Increment +" Click="OnIncrement"
+                    Style="Primary" ColumnSpan="2"
+                    Trigger_Hover="property=width;to=150;duration=0.3"
+                    Trigger_Click="property=height;to=40;duration=0.2"/>
+
+            <Button Name="DecrementBtn" Text="Decrement -" Click="OnDecrement"
+                    Style="Danger" ColumnSpan="2"
+                    Color="220,20,60" HoverColor="255,99,71"/>
+
+            <Button Name="ResetBtn" Text="Reset" Click="OnReset"
+                    Style="Default" ColumnSpan="2"
+                    Tooltip="Reset counter to zero"/>
+        </ColumnSystem>
+
+        <ColumnSystem Name="ActionPanel" Columns="4" ColumnSpan="12">
+            <Button Name="HelloBtn" Text="Say Hello" Click="OnHello"
+                    ColumnSpan="2" Height="35"
+                    Trigger_Hover="property=width;to=120;duration=0.4"/>
+
+            <Button Name="ToggleBtn" Text="Toggle Theme" Click="OnToggleTheme"
+                    ColumnSpan="2" Style="Success"/>
+        </ColumnSystem>
+
+        <TextBlock Name="GridDemoTitle" Text="Adaptive Grid Demo" ColumnSpan="12"
+                   Style="Subtitle" Align="Center" Height="30"/>
+
+        <ColumnSystem Name="GridDemo" Columns="4" ColumnSpan="12">
+            <Button Name="GridBtn1" Text="Button 1" ColumnSpan="1" Style="Primary"/>
+            <Button Name="GridBtn2" Text="Button 2" ColumnSpan="1" Style="Success"/>
+            <Button Name="GridBtn3" Text="Button 3" ColumnSpan="1" Style="Danger"/>
+            <Button Name="GridBtn4" Text="Button 4" ColumnSpan="1" Style="Default"/>
+
+            <Button Name="WideBtn1" Text="Wide Button 1" ColumnSpan="2" Style="Primary"/>
+            <Button Name="WideBtn2" Text="Wide Button 2" ColumnSpan="2" Style="Success"/>
+
+            <Button Name="FullBtn" Text="Full Width Button" ColumnSpan="4" Style="Default"/>
+        </ColumnSystem>
+
+        <ColumnSystem Name="SizeDemo" Columns="3" ColumnSpan="12">
+            <Button Name="SmallBtn" Text="Small" Width="80" Height="25" ColumnSpan="1"/>
+            <Button Name="MediumBtn" Text="Medium" Width="120" Height="35" Align="Center" ColumnSpan="1"/>
+            <Button Name="LargeBtn" Text="Large" Width="160" Height="45" ColumnSpan="1"/>
+        </ColumnSystem>
+
+        <ColumnSystem Name="AlignmentDemo" Columns="3" ColumnSpan="12">
+            <Button Name="LeftBtn" Text="Left" Width="80" Align="Left" ColumnSpan="1"/>
+            <Button Name="CenterBtn" Text="Center" Width="80" Align="Center" ColumnSpan="1"/>
+            <Button Name="RightBtn" Text="Right" Width="80" Align="Right" ColumnSpan="1"/>
+        </ColumnSystem>
+
+        <TextBlock Name="Footer" Text="© 2025 Hueta inc - Adaptive Layout System"
+                   ColumnSpan="12" Align="Center" Height="25" Color="169,169,169"/>
+
+    </ColumnSystem>
+</Window>

@@ -8,9 +8,12 @@
 
 namespace UISystem
 {
-    class Panel : public UIElement {
+    class HUD : public UIElement {
     public:
-        Panel(const std::string& name);
+        HUD(const std::string& name);
         void Render() override;
+
+    private:
+        bool m_visible = true;
     };
 }

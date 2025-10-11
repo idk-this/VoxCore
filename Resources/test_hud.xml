@@ -1,0 +1,16 @@
+<HUD Name="PlayerHUD" Flags="NoBackground|AlwaysAutoResize|NoInputs">
+    <ColumnSystem Name="TopLeft" Columns="1" ColumnSpan="12" VerticalAlign="Top">
+        <TextBlock Name="FPS" Width="500" Text="FPS: 60"/>
+        <TextBlock Name="Coords" Width="500"  Text="Local position: X:123 Y:64 Z:-532"/>
+        <TextBlock Name="ChunkCoords" Width="500"  Text="Current Chunk: X:123 Y:64 Z:-532"/>
+        <TextBlock Name="ViewAngle" Width="500"  Text="View angle: P:123 Y:64 R:-532"/>
+    </ColumnSystem>
+
+    <ColumnSystem Name="BottomLeft" Columns="1" ColumnSpan="12" VerticalAlign="Bottom">
+        <TextBlock Name="Time" Width="200" ColumnSpan="1" Text="12:34:56"/>
+    </ColumnSystem>
+
+    <ColumnSystem Name="BottomRight" Columns="1" ColumnSpan="12"  VerticalAlign="Bottom">
+        <TextBlock Name="Build" Width="200" ColumnSpan="1" Align="Right" Text="Build: Debug"/>
+    </ColumnSystem>
+</HUD>

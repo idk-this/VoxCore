@@ -16,15 +16,3 @@ void Panel::Render() {
     }
     ImGui::EndGroup();
 }
-
-void Panel::ParseAttributes(const std::unordered_map<std::string, std::string>& attributes) {
-    auto it = attributes.find("Width");
-    if (it != attributes.end()) {
-        ParseSize(it->second, m_width);
-    }
-
-    it = attributes.find("Height");
-    if (it != attributes.end()) {
-        ParseSize(it->second, m_height);
-    }
-}

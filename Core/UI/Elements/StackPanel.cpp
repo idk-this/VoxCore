@@ -22,10 +22,3 @@ void StackPanel::Render() {
         }
     }
 }
-
-void StackPanel::ParseAttributes(const std::unordered_map<std::string, std::string>& attributes) {
-    auto it = attributes.find("Orientation");
-    if (it != attributes.end()) {
-        m_horizontal = (it->second == "Horizontal");
-    }
-}

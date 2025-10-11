@@ -12,7 +12,6 @@ namespace UISystem
     public:
         StackPanel(const std::string& name);
         void Render() override;
-        void ParseAttributes(const std::unordered_map<std::string, std::string>& attributes) override;
 
     private:
         bool m_horizontal = false;

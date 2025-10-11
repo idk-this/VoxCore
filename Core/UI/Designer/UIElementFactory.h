@@ -5,6 +5,7 @@
 #pragma once
 #include "Core/UI/Elements/Button.h"
 #include "Core/UI/Elements/ColumnSystem.h"
+#include "Core/UI/Elements/HUD.h"
 #include "Core/UI/Elements/Panel.h"
 #include "Core/UI/Elements/StackPanel.h"
 #include "Core/UI/Elements/TextBlock.h"
@@ -17,7 +18,11 @@ namespace UISystem {
 
         if (elementType == "Window") {
             element = std::make_shared<Window>(name);
-        } else if (elementType == "TextBlock") {
+
+        }
+        else if (elementType == "HUD") {
+            element = std::make_shared<HUD>(name);
+        }else if (elementType == "TextBlock") {
             element = std::make_shared<TextBlock>(name);
         } else if (elementType == "Button") {
             element = std::make_shared<Button>(name);

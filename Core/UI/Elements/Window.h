@@ -12,11 +12,12 @@ namespace UISystem
     public:
         Window(const std::string& name);
         void Render() override;
-        void ParseAttributes(const std::unordered_map<std::string, std::string>& attributes) override;
 
     private:
-        std::string m_title;
+        std::string m_title = "Window";
         int m_flags = 0;
+        bool m_canClose = true;
+        bool m_visible = true;
     };
 }
 

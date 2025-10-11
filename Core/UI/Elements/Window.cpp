@@ -12,27 +12,45 @@ using namespace UISystem;
 Window::Window(const std::string& name) : UIElement(name) {}
 
 void Window::Render() {
-    if (ImGui::Begin(m_title.c_str(), nullptr, m_flags)) {
+
+    if (HasAttribute("Visible") && GetAttribute("Visible") == "false")
+        return;
+
+    std::string title = HasAttribute("Title") ? GetAttribute("Title") : "Window";
+
+    bool canClose = !HasAttribute("CanClose") || GetAttribute("CanClose") != "false";
+
+    ImGuiWindowFlags flags = 0;
+    static const std::unordered_map<std::string, ImGuiWindowFlags> flagMap = {
+        {"MenuBar", ImGuiWindowFlags_MenuBar},
+        {"NoCollapse", ImGuiWindowFlags_NoCollapse},
+        {"NoResize", ImGuiWindowFlags_NoResize},
+        {"NoMove", ImGuiWindowFlags_NoMove},
+        {"NoScrollbar", ImGuiWindowFlags_NoScrollbar},
+        {"AlwaysAutoResize", ImGuiWindowFlags_AlwaysAutoResize}
+    };
+
+    if (HasAttribute("Flags")) {
+        std::string flagStr = GetAttribute("Flags");
+        std::istringstream iss(flagStr);
+        std::string token;
+
+        while (std::getline(iss, token, '|')) {
+            token.erase(std::remove_if(token.begin(), token.end(), ::isspace), token.end());
+            auto it = flagMap.find(token);
+            if (it != flagMap.end())
+                flags |= it->second;
+        }
+    } else {
+        flags = 0;
+    }
+
+    bool visible = true;
+
+    if (ImGui::Begin(title.c_str(), canClose ? &visible : nullptr, flags)) {
         for (auto& child : m_children) {
             child->Render();
         }
     }
     ImGui::End();
-}
-
-void Window::ParseAttributes(const std::unordered_map<std::string, std::string>& attributes) {
-    auto it = attributes.find("Name");
-    if (it != attributes.end()) {
-        m_title = it->second;
-    }
-
-    it = attributes.find("Flags");
-    if (it != attributes.end()) {
-        std::stringstream ss(it->second);
-        std::string flag;
-        while (std::getline(ss, flag, '|')) {
-            if (flag == "ImGuiWindowFlags_MenuBar") m_flags |= ImGuiWindowFlags_MenuBar;
-            else if (flag == "ImGuiWindowFlags_NoCollapse") m_flags |= ImGuiWindowFlags_NoCollapse;
-        }
-    }
 }

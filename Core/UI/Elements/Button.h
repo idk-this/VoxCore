@@ -15,8 +15,8 @@ namespace UISystem
     public:
         Button(const std::string& name);
         void Render() override;
-        void ParseAttributes(const std::unordered_map<std::string, std::string>& attributes) override;
-
+        void SetDataContext(DataContext* dataContext) override;
+        UISize GetElementWidth() const override;
     private:
         std::string m_clickHandler;
         std::string m_style;

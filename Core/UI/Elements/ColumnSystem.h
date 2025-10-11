@@ -12,11 +12,10 @@ namespace UISystem
     public:
         ColumnSystem(const std::string& name);
         void Render() override;
-        void ParseAttributes(const std::unordered_map<std::string, std::string>& attributes) override;
+        void SetDataContext(DataContext* dataContext) override;
         void AddChild(std::shared_ptr<UIElement> child);
+
     private:
-        int m_columns = 12;
-        std::unordered_map<std::string, int> m_childColumnSpans;
-        std::vector<int> m_columnSizes;
+        int m_columns = 1;
     };
 }

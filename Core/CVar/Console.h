@@ -152,6 +152,9 @@ REGISTER_COMMAND_FULL(name, description, "", 0, lambda)
 #define REGISTER_COMMAND(name, description) \
 REGISTER_COMMAND_FULL(name, description, "", 0, [](const CommandArgs&){})
 
+#define REGISTER_COMMANDF(name, description, flags) \
+REGISTER_COMMAND_FULL(name, description, "", flags, [](const CommandArgs&){}) \
+
 #define REGISTER_COMMAND_USAGE(name, description, usage) \
 REGISTER_COMMAND_FULL(name, description, usage, 0, [](const CommandArgs& args)
 

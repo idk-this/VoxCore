@@ -10,68 +10,126 @@ using namespace UISystem;
 
 ColumnSystem::ColumnSystem(const std::string& name) : UIElement(name) {}
 
-    void ColumnSystem::Render() {
-        ImGui::BeginGroup();
+void ColumnSystem::Render() {
+    ImGui::BeginGroup();
 
-        float availableWidth = ImGui::GetContentRegionAvail().x;
-        float columnWidth = availableWidth / m_columns;
+    ImVec2 posStart = ImGui::GetCursorScreenPos();
+    ImVec2 avail = ImGui::GetContentRegionAvail();
+    float availableWidth = avail.x;
+    float availableHeight = avail.y;
 
-        int currentColumn = 0;
-        bool isNewLine = true;
+    if (m_columns <= 0)
+        m_columns = 1;
 
-        for (auto& child : m_children) {
-            int columnSpan = std::stoi(child->GetAttribute("ColumnSpan"));
-
-            if (currentColumn + columnSpan > m_columns) {
-                currentColumn = 0;
-                isNewLine = true;
-                ImGui::NewLine();
-            }
-
-            if (!isNewLine && currentColumn > 0) {
-                ImGui::SameLine();
-            }
-
-            float elementWidth = columnWidth * columnSpan;
-
-            ImGui::BeginGroup();
-            ImGui::PushItemWidth(elementWidth);
-            child->Render();
-            ImGui::PopItemWidth();
-            ImGui::EndGroup();
-
-            currentColumn += columnSpan;
-            isNewLine = false;
-
-            if (currentColumn >= m_columns) {
-                currentColumn = 0;
-                isNewLine = true;
-            }
+    float totalWidth = availableWidth;
+    if (HasAttribute("Width")) {
+        try {
+            totalWidth = std::stof(GetAttribute("Width"));
+            totalWidth = std::min(totalWidth, availableWidth); // Не превышаем доступную ширину
         }
-
-        ImGui::EndGroup();
+        catch (...) {
+            totalWidth = availableWidth;
+        }
     }
 
-    void ColumnSystem::ParseAttributes(const std::unordered_map<std::string, std::string>& attributes) {
-        if (HasAttribute("Columns")) {
+    float columnWidth = totalWidth / static_cast<float>(m_columns);
+
+    float startX = posStart.x;
+    if (HasAttribute("Align")) {
+        std::string align = GetAttribute("Align");
+        if (align == "Center")
+            startX = posStart.x + (availableWidth - totalWidth) * 0.5f;
+        else if (align == "Right")
+            startX = posStart.x + (availableWidth - totalWidth);
+    }
+
+    float startY = posStart.y;
+    if (HasAttribute("VerticalAlign")) {
+        std::string valign = GetAttribute("VerticalAlign");
+        if (valign == "Bottom")
+            startY = posStart.y + availableHeight;
+    }
+
+    int currentColumn = 0;
+    float currentY = startY;
+
+    for (auto& child : m_children) {
+        int columnSpan = 1;
+        if (child->HasAttribute("ColumnSpan")) {
+            try { columnSpan = std::stoi(child->GetAttribute("ColumnSpan")); }
+            catch (...) { columnSpan = 1; }
+            if (columnSpan < 1) columnSpan = 1;
+            if (columnSpan > m_columns) columnSpan = m_columns;
+        }
+
+        if (currentColumn + columnSpan > m_columns) {
+            currentColumn = 0;
+            currentY += ImGui::GetTextLineHeight() + ImGui::GetStyle().ItemSpacing.y;
+        }
+
+        float elementWidth = columnWidth * columnSpan;
+        float columnStartX = startX + columnWidth * currentColumn;
+        float childX = columnStartX;
+
+        float childWidth = elementWidth;
+        if (child->HasAttribute("Width")) {
+            try {
+                childWidth = std::stof(child->GetAttribute("Width"));
+                childWidth = std::min(childWidth, elementWidth);
+            }
+            catch (...) {}
+        }
+
+        if (child->HasAttribute("Align")) {
+            std::string align = child->GetAttribute("Align");
+            if (align == "Center")
+                childX = columnStartX + (elementWidth - childWidth) * 0.5f;
+            else if (align == "Right")
+                childX = columnStartX + (elementWidth - childWidth);
+        }
+
+        ImGui::SetCursorScreenPos(ImVec2(childX, currentY));
+
+        ImGui::PushItemWidth(childWidth);
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32(0,0,0,0));
+        ImGui::BeginChild((child->GetName() + "_container").c_str(),
+                         ImVec2(childWidth, 0),
+                         ImGuiChildFlags_AutoResizeY);
+        ImGui::PopStyleColor();
+
+        child->Render();
+
+        ImGui::EndChild();
+        ImGui::PopItemWidth();
+
+        currentColumn += columnSpan;
+        if (currentColumn >= m_columns) {
+            currentColumn = 0;
+            float itemHeight = ImGui::GetItemRectSize().y;
+            currentY += itemHeight + ImGui::GetStyle().ItemSpacing.y;
+        }
+    }
+
+    ImGui::EndGroup();
+}
+
+
+void ColumnSystem::SetDataContext(DataContext* dataContext)
+{
+    UIElement::SetDataContext(dataContext);
+    if (HasAttribute("Columns")) {
+        try {
             m_columns = std::stoi(GetAttribute("Columns"));
-        }
-        if (HasAttribute("ColumnSizes")) {
-            std::stringstream ss(GetAttribute("ColumnSizes"));
-            std::string size;
-            while (std::getline(ss, size, ',')) {
-                m_columnSizes.push_back(std::stoi(size));
-            }
+            if (m_columns < 1) m_columns = 1;
+        } catch (...) {
+            m_columns = 1;
         }
     }
+}
 
-    void ColumnSystem::AddChild(std::shared_ptr<UIElement> child)
-    {if (child) {
-            child->SetParent(this);
-            m_children.push_back(child);
-            auto columnSpanAttr = child->GetAttribute("ColumnSpan");
-            if (!columnSpanAttr.empty()) {
-                m_childColumnSpans[child->GetName()] = std::stoi(columnSpanAttr);
-            }
-        }
+void ColumnSystem::AddChild(std::shared_ptr<UIElement> child) {
+    if (child) {
+        child->SetParent(this);
+        m_children.push_back(child);
     }
+}

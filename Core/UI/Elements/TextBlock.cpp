@@ -7,6 +7,8 @@
 #include <imgui.h>
 #include <regex>
 
+#include "Core/UI/Designer/UIAnimation.h"
+
 using namespace UISystem;
 
 TextBlock::TextBlock(const std::string& name) : TextElement(name) {}
@@ -16,31 +18,49 @@ void TextBlock::Render() {
     ImGui::Text("%s", m_text.c_str());
 }
 
-void TextBlock::ParseAttributes(const std::unordered_map<std::string, std::string>& attributes) {
-    auto it = attributes.find("Text");
-    if (it != attributes.end()) {
-        std::string text = it->second;
-        std::regex bindingRegex("\\{Binding Path=([^}]+)\\}");
-        std::smatch match;
-        if (std::regex_search(text, match, bindingRegex)) {
-            m_bindingPath = match[1];
-            m_text = "[Binding: " + m_bindingPath + "]";
-        } else {
-            m_text = text;
-        }
-    }
-
-    it = attributes.find("Style");
-    if (it != attributes.end()) {
-        m_style = it->second;
-    }
-}
 
 void TextBlock::Update() {
-    if (!m_bindingPath.empty() && m_dataContext) {
+    if (m_hasBinding && !m_bindingPath.empty() && m_dataContext) {
         std::string value = m_dataContext->GetProperty(m_bindingPath);
         if (!value.empty()) {
             m_text = value;
         }
+    }
+}
+void TextBlock::SetDataContext(DataContext* dataContext) {
+    UIElement::SetDataContext(dataContext);
+    if (HasAttribute("Text")) {
+        std::string text = GetAttribute("Text");
+
+        std::regex bindingRegex("\\{Binding\\s+([^}]+)\\}");
+        std::smatch match;
+        if (std::regex_search(text, match, bindingRegex)) {
+            m_bindingPath = match[1];
+            m_hasBinding = true;
+            m_text = "[Binding: " + m_bindingPath + "]";
+            if (m_dataContext) {
+                m_dataContext->AddObserver(m_bindingPath, this);
+                Update();
+            }
+        } else {
+            m_text = text;
+            m_hasBinding = false;
+        }
+    }
+    if (m_dataContext && !m_bindingPath.empty()) {
+        m_dataContext->RemoveObserver(m_bindingPath, this);
+    }
+
+    UIElement::SetDataContext(dataContext);
+
+    if (m_dataContext && !m_bindingPath.empty()) {
+        m_dataContext->AddObserver(m_bindingPath, this);
+        Update();
+    }
+}
+
+void TextBlock::OnDataChanged(const std::string& path, const std::string& value) {
+    if (path == m_bindingPath) {
+        m_text = value;
     }
 }

@@ -4,7 +4,8 @@
 #include <fstream>
 #include <iomanip>
 
-DECLARE_CONVAR("sv_cheats", false, "Controls whether cheat-only commands and features are accessible.", CVAR_RUNTIME_ONLY);
+DECLARE_CONVAR("sv_cheats", false, "Controls whether cheat-only commands and features are accessible.",
+               CVAR_RUNTIME_ONLY | CVAR_CONSOLE_EDIT);
 
 ConVar::ConVar(const std::string& name, CVarValue defaultValue, const std::string& description, int flags,
                std::optional<CVarValue> min, std::optional<CVarValue> max)

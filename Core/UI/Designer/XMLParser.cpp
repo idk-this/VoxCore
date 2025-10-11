@@ -41,20 +41,17 @@ namespace UISystem {
             return nullptr;
         }
 
-        // Парсинг атрибутов
         std::unordered_map<std::string, std::string> attributes;
         for (auto attr : node.attributes()) {
             std::string attrName = attr.name();
             std::string attrValue = attr.value();
 
             attributes[attrName] = attrValue;
-            element->SetAttribute(attrName, attrValue); // Сохраняем атрибуты в элементе
+            element->SetAttribute(attrName, attrValue);
         }
 
-        element->ParseAttributes(attributes);
         element->SetDataContext(dataContext);
 
-        // Рекурсивный парсинг дочерних элементов
         for (auto child : node.children()) {
             auto childElement = ParseElement(child, dataContext);
             if (childElement) {
@@ -62,7 +59,6 @@ namespace UISystem {
             }
         }
 
-        // Применение биндингов
         ApplyBindings(element, dataContext);
 
         return element;

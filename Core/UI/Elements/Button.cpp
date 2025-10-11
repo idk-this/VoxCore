@@ -37,21 +37,9 @@ static UIAnimation ParseAnimationString(const std::string& str) {
 }
 
 void Button::Render() {
-    float availWidth = ImGui::GetContentRegionAvail().x;
-    float baseHeight = ImGui::GetFrameHeight();
     float deltaTime = ImGui::GetIO().DeltaTime;
 
-    // --- ColumnSpan ---
-    int columnSpan = 1;
-    if (HasAttribute("ColumnSpan")) {
-        columnSpan = std::stoi(GetAttribute("ColumnSpan"));
-        if (columnSpan < 1) columnSpan = 1;
-    }
-
-    const int totalColumns = 12;
-    float columnWidth = availWidth / totalColumns;
-    float spanWidth = columnWidth * columnSpan;
-
+    // --- Обработка анимаций ---
     for (auto& [name, anim] : m_activeAnimations) {
         if (!anim.active) continue;
         float diff = anim.toValue - anim.current;
@@ -63,19 +51,45 @@ void Button::Render() {
             anim.active = false;
         }
 
-        if (anim.property == "Width") {
-            m_width = anim.current;
-        } else if (anim.property == "Height") {
-            m_height = anim.current;
-        } else if (anim.property == "ColumnSpan") {
-            m_attributes["ColumnSpan"] = std::to_string((int)anim.current);
-        }
+        if (anim.property == "Width") m_width = anim.current;
+        else if (anim.property == "Height") m_height = anim.current;
+        else if (anim.property == "ColumnSpan") m_attributes["ColumnSpan"] = std::to_string((int)anim.current);
     }
 
-    float buttonWidth = m_width.Calculate(spanWidth);
-    float buttonHeight = m_height.Calculate(baseHeight);
+    // --- Пространство, выделенное колонкой ---
+    float availableWidth = m_width.value; // от ColumnSystem
+    if (availableWidth <= 0)
+        availableWidth = ImGui::GetContentRegionAvail().x;
 
-    // --- Текст кнопки ---
+    // --- Фактический размер кнопки ---
+    float buttonWidth = availableWidth; // по умолчанию растягиваем
+    if (HasAttribute("Width")) {
+        try {
+            buttonWidth = std::stof(GetAttribute("Width")); // фиксированный размер
+            if (buttonWidth > availableWidth)
+                buttonWidth = availableWidth; // ограничение
+        } catch (...) { /* игнорировать */ }
+    }
+
+    float buttonHeight = ImGui::GetFrameHeight();
+    if (HasAttribute("Height")) {
+        try {
+            buttonHeight = std::stof(GetAttribute("Height"));
+        } catch (...) { /* игнорировать */ }
+    }
+    if (HasAttribute("Align")) {
+        std::string align = GetAttribute("Align");
+        float offset = 0.0f;
+
+        if (align == "Center") {
+            offset = (availableWidth - buttonWidth) / 2.0f;
+        } else if (align == "Right") {
+            offset = availableWidth - buttonWidth;
+        }
+
+        if (offset > 0)
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offset);
+    }
     std::string buttonText = m_name;
     for (auto& child : m_children) {
         if (child->GetType() == "TextBlock" && child->HasAttribute("Text")) {
@@ -83,30 +97,11 @@ void Button::Render() {
             break;
         }
     }
-
-    // --- Tooltip ---
     std::string tooltip;
     if (HasAttribute("Tooltip"))
         tooltip = GetAttribute("Tooltip");
-
-    // --- Align ---
-    if (HasAttribute("Align")) {
-        std::string align = GetAttribute("Align");
-        if (align == "Center") {
-            float offset = (spanWidth - buttonWidth) / 2.0f;
-            if (offset > 0)
-                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offset);
-        } else if (align == "Right") {
-            float offset = spanWidth - buttonWidth;
-            if (offset > 0)
-                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offset);
-        }
-    }
-
-    // --- Render Button ---
     if (ImGui::Button(buttonText.c_str(), ImVec2(buttonWidth, buttonHeight))) {
         if (OnClick) OnClick();
-
         if (!m_clickHandler.empty() && m_dataContext) {
             auto* dataContext = static_cast<SimpleDataContext*>(m_dataContext);
             auto handler = dataContext->GetEvent(m_clickHandler);
@@ -114,17 +109,18 @@ void Button::Render() {
         }
     }
 
-    if (!tooltip.empty() && ImGui::IsItemHovered()) {
+    if (!tooltip.empty() && ImGui::IsItemHovered())
         ImGui::SetTooltip("%s", tooltip.c_str());
-    }
-
-    for (auto& child : m_children) {
+    for (auto& child : m_children)
         child->Render();
-    }
 }
 
-void Button::ParseAttributes(const std::unordered_map<std::string, std::string>& attributes) {
-    for (const auto& [key, value] : attributes) {
+
+
+void Button::SetDataContext(DataContext* dataContext)
+{
+    UIElement::SetDataContext(dataContext);
+    for (const auto& [key, value] : GetAttributes()) {
         if (key == "Click") {
             m_clickHandler = value;
         } else if (key == "Style") {
@@ -143,5 +139,20 @@ void Button::ParseAttributes(const std::unordered_map<std::string, std::string>&
             m_attributes[key] = value;
         }
     }
+}
 
+UISize Button::GetElementWidth() const
+{
+    float availableWidth = m_width.value;
+    if (availableWidth <= 0)
+        availableWidth = ImGui::GetContentRegionAvail().x;
+    float buttonWidth = availableWidth;
+    if (HasAttribute("Width")) {
+        try {
+            buttonWidth = std::stof(GetAttribute("Width"));
+            if (buttonWidth > availableWidth)
+                buttonWidth = availableWidth;
+        } catch (...) {}
+    }
+    return UISize(buttonWidth);
 }
