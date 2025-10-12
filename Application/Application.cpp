@@ -19,8 +19,8 @@
 #include "Core/ECS/Components/UCameraComponent.h"
 #include "Core/ECS/Components/UTransformComponent.h"
 #include "Core/ECS/Components/UMeshComponent.h"
-#include "Core/UI/Designer/DataBinding.h"
-#include "Core/UI/Designer/XMLParser.h"
+#include "../Core/UI/Core/DataBinding.h"
+#include "../Core/UI/Core/XMLParser.h"
 #include "Core/Utils/FileSystem.h"
 #include "Platform/Window/Components/WindowInputComponent.h"
 
@@ -50,29 +50,7 @@ public:
         });
     }
 };
-class HudContext : public UISystem::SimpleDataContext {
-public:
-    HudContext() {
-        SetProperty("title", "My Application");
-        SetProperty("Counter", "0");
-        SetProperty("UserName", "John Doe");
-        BindEvent("OnIncrement", [this]() {
-            int count = std::stoi(GetProperty("Counter"));
-            SetProperty("Counter", std::to_string(count + 1));
-        });
-        BindEvent("OnDecrement", [this]() {
-            int count = std::stoi(GetProperty("Counter"));
-            SetProperty("Counter", std::to_string(count - 1));
-        });
-        BindEvent("OnReset", [this]() {
-           SetProperty("Counter", std::to_string(0));
-       });
 
-        BindEvent("OnHello", []() {
-            std::cout << "Hello from button!" << std::endl;
-        });
-    }
-};
 Application::Application()
 {
 
@@ -128,12 +106,11 @@ void Application::MainLoop() {
     int frameCount = 0;
     float fpsTimer = 0.0f;
     auto dataContext = std::make_shared<MyDataContext>();
-    auto hudContext = std::make_shared<HudContext>();
+
 
     UISystem::XMLUIParser parser;
     auto uiRoot = parser.ParseUIFile("Content/test_ui.xml", dataContext.get());
-    UISystem::XMLUIParser hud;
-    auto hudRoot = hud.ParseUIFile("Content/test_hud.xml", hudContext.get());
+
     while (!window->ShouldClose()) {
         auto now = std::chrono::high_resolution_clock::now();
         float dt = std::chrono::duration<float>(now - lastTime).count();
@@ -143,24 +120,13 @@ void Application::MainLoop() {
         Engine::GetCurrentContext().GetImGui()->NewFrameWindow();
         ImGui::NewFrame();
         if (uiRoot) {
-            uiRoot->Render();
+           // uiRoot->Render();
         }
-        if (hudRoot)
-        {
-            hudRoot->Render();
-        }
+
         Update(dt);
         renderer->RenderFrame();
         window->SwapBuffers();
-        frameCount++;
-        fpsTimer += dt;
-        if (fpsTimer >= 1.0f) {
-            std::ostringstream oss;
-            oss << "VoxCraft Beta | FPS: " << frameCount;
-            window->SetTitle(oss.str());
-            frameCount = 0;
-            fpsTimer = 0.0f;
-        }
+
     }
 
 }

@@ -8,27 +8,27 @@
 #include <string>
 #include <functional>
 #include <unordered_map>
+#include "Core/Export.h"
 
 namespace UISystem {
-    class DataObserver {
+    class VOXCORE_API DataObserver {
     public:
         virtual ~DataObserver() = default;
         virtual void OnDataChanged(const std::string& path, const std::string& value) = 0;
     };
 
-    class DataContext {
+    class VOXCORE_API DataContext {
     public:
         virtual ~DataContext() = default;
         virtual std::string GetProperty(const std::string& path) = 0;
         virtual void SetProperty(const std::string& path, const std::string& value) = 0;
         virtual void BindEvent(const std::string& eventName, std::function<void()> handler) = 0;
 
-        // Добавляем методы для подписки на изменения
         virtual void AddObserver(const std::string& path, DataObserver* observer) = 0;
         virtual void RemoveObserver(const std::string& path, DataObserver* observer) = 0;
     };
 
-    class SimpleDataContext : public DataContext {
+    class VOXCORE_API SimpleDataContext : public DataContext {
     public:
         std::string GetProperty(const std::string& path) override {
             auto it = properties.find(path);
@@ -37,7 +37,6 @@ namespace UISystem {
 
         void SetProperty(const std::string& path, const std::string& value) override {
             properties[path] = value;
-            // Уведомляем всех наблюдателей об изменении
             auto it = observers.find(path);
             if (it != observers.end()) {
                 for (auto* observer : it->second) {

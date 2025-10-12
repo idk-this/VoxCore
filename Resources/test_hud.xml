@@ -1,9 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
 <HUD Name="PlayerHUD" Flags="NoBackground|AlwaysAutoResize|NoInputs">
     <ColumnSystem Name="TopLeft" Columns="1" ColumnSpan="12" VerticalAlign="Top">
-        <TextBlock Name="FPS" Width="500" Text="FPS: 60"/>
-        <TextBlock Name="Coords" Width="500"  Text="Local position: X:123 Y:64 Z:-532"/>
-        <TextBlock Name="ChunkCoords" Width="500"  Text="Current Chunk: X:123 Y:64 Z:-532"/>
-        <TextBlock Name="ViewAngle" Width="500"  Text="View angle: P:123 Y:64 R:-532"/>
+        <TextBlock Name="FPS" Width="500" FontSize="25" Text="{Binding CurrentFps}"/>
+        <TextBlock Name="Coords" Width="1500" FontSize="25" Font="Roboto-Regular"  Text="{Binding CurrentPlayerPos}"/>
+        <TextBlock Name="BlockCoords" Width="1500" FontSize="25" Font="Roboto-Regular"  Text="{Binding CurrentPlayerBlockPos}"/>
+        <TextBlock Name="ChunkCoords" Width="1500" FontSize="25" Text="{Binding CurrentPlayerChunkPos}"/>
+        <TextBlock Name="ViewAngle" Width="500" FontSize="25" Text="{Binding PlayerViewAngle}"/>
     </ColumnSystem>
 
     <ColumnSystem Name="BottomLeft" Columns="1" ColumnSpan="12" VerticalAlign="Bottom">

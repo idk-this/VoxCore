@@ -10,15 +10,16 @@
 #include <memory>
 #include <vector>
 
-#include "../Designer/DataBinding.h"
+#include "Core/Export.h""
+#include "DataBinding.h"
 
 namespace UISystem {
-    enum class SizeType {
+    enum class VOXCORE_API SizeType {
         Pixels,
         Percent,
         Auto
     };
-    struct UISize {
+    struct VOXCORE_API UISize {
         float value;
         SizeType type;
 
@@ -33,7 +34,7 @@ namespace UISystem {
             return 0;
         }
     };
-    class UIElement {
+    class VOXCORE_API UIElement {
     public:
         UIElement(const std::string& name) : m_name(name) {}
         virtual ~UIElement() = default;
@@ -101,7 +102,7 @@ namespace UISystem {
         std::vector<std::shared_ptr<UIElement>> m_children;
     };
 
-    class UIElementFactory {
+    class VOXCORE_API UIElementFactory {
     public:
         static std::shared_ptr<UIElement> CreateElement(const std::string& elementType, const std::string& name);
     };

@@ -5,8 +5,8 @@
 #pragma once
 #include <map>
 
-#include "UIElement.h"
-#include "Core/UI/Designer/UIAnimation.h"
+#include "../../Core/UIElement.h"
+#include "Core/UI/Core/UIAnimation.h"
 
 
 namespace UISystem

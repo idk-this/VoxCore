@@ -3,14 +3,14 @@
 //
 
 #pragma once
-#include "Core/UI/Elements/Button.h"
-#include "Core/UI/Elements/ColumnSystem.h"
-#include "Core/UI/Elements/HUD.h"
-#include "Core/UI/Elements/Panel.h"
-#include "Core/UI/Elements/StackPanel.h"
-#include "Core/UI/Elements/TextBlock.h"
-#include "Core/UI/Elements/UIElement.h"
-#include "Core/UI/Elements/Window.h"
+#include "Core/UI/Elements/Common/Button.h"
+#include "Core/UI/Elements/Layouts/ColumnSystem.h"
+#include "Core/UI/Elements/Containers/HUD.h"
+#include "Core/UI/Elements/Common/Panel.h"
+#include "Core/UI/Elements/Layouts/StackPanel.h"
+#include "Core/UI/Elements/Common/TextBlock.h"
+#include "UIElement.h"
+#include "Core/UI/Elements/Containers/Window.h"
 
 namespace UISystem {
     std::shared_ptr<UIElement> UIElementFactory::CreateElement(const std::string& elementType, const std::string& name) {
@@ -18,7 +18,6 @@ namespace UISystem {
 
         if (elementType == "Window") {
             element = std::make_shared<Window>(name);
-
         }
         else if (elementType == "HUD") {
             element = std::make_shared<HUD>(name);

@@ -178,12 +178,6 @@ void VulkanRenderer::ProcessRender() {
 	m_renderObjectManager->UpdateWorldState(m_world);
 	m_renderObjectManager->RenderObjects(cmd, m_cameraUBO.get(), m_currentFrame);
 	if (g_imguiInitialized) {
-
-		ImGui::Begin("Debug");
-		ImGui::Text("Vulkan + ImGui");
-		ImGui::Text("FPS: %.1f", 1.0f/ImGui::GetIO().DeltaTime);
-		ImGui::Text("Rendered vertices: %llu", m_renderedVertices);
-		ImGui::End();
 		{
 			ImDrawList* drawList = ImGui::GetBackgroundDrawList();
 			ImVec2 displaySize = ImGui::GetIO().DisplaySize;
