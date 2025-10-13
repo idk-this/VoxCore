@@ -10,8 +10,9 @@
 #include <memory>
 #include <vector>
 
-#include "Core/Export.h""
+#include "Core/Export.h"
 #include "DataBinding.h"
+#include "imgui.h"
 
 namespace UISystem {
     enum class VOXCORE_API SizeType {
@@ -87,6 +88,7 @@ namespace UISystem {
 
         };
         UISize GetHeight() const { return m_height; }
+        ImVec4 ParseColor(const std::string& str);
         [[nodiscard]] std::vector<std::shared_ptr<UIElement>> GetChildren() const { return m_children; }
 
         std::function<void()> OnClick;

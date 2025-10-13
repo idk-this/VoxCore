@@ -27,6 +27,8 @@
 using namespace Engine;
 Engine::Application* Engine::Application::m_instance = nullptr;
 
+DECLARE_CONVAR("dbg_show_demo_window", false, "Show demo xml window", CVAR_RUNTIME_ONLY | CVAR_CONSOLE_EDIT);
+
 class MyDataContext : public UISystem::SimpleDataContext {
 public:
     MyDataContext() {
@@ -119,8 +121,8 @@ void Application::MainLoop() {
         Engine::GetCurrentContext().GetImGui()->NewFrameGraphics();
         Engine::GetCurrentContext().GetImGui()->NewFrameWindow();
         ImGui::NewFrame();
-        if (uiRoot) {
-           // uiRoot->Render();
+        if (uiRoot && GET_CVAR(bool, "dbg_show_demo_window")) {
+            uiRoot->Render();
         }
 
         Update(dt);

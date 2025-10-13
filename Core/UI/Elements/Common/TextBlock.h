@@ -29,7 +29,6 @@ namespace UISystem
         std::string m_fontName;
         ImFont* m_font = nullptr;
 
-        ImVec4 ParseColor(const std::string& str);
         ImFont* FindFont(const std::string& name, float size);
     };
 }

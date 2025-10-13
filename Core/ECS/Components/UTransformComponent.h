@@ -33,6 +33,10 @@ public:
     {
         return glm::normalize(rotation * glm::vec3(0.0f, 0.0f, -1.0f));
     }
+    void SetRotationYaw(float yawDegrees)
+    {
+        rotation = glm::angleAxis(glm::radians(yawDegrees), glm::vec3(0, 1, 0));
+    }
 
     glm::vec3 GetRightVector() const
     {

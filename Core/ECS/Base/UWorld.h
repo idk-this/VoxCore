@@ -6,6 +6,7 @@
 
 #include <vector>
 #include <memory>
+#include <algorithm>
 #include "Core/Log/Logger.h"
 #include "AActor.h"
 #include "Core/ECS/Systems/UBaseSystem.h"
@@ -18,7 +19,7 @@ public:
     ~UWorld() = default;
 
     template<typename T, typename... Args>
-     std::shared_ptr<T> SpawnActor(Args&&... args) {
+    std::shared_ptr<T> SpawnActor(Args&&... args) {
         static_assert(std::is_base_of_v<AActor, T>, "T must inherit from AActor");
 
         auto actor = std::make_shared<T>(std::forward<Args>(args)...);
@@ -36,6 +37,7 @@ public:
         }
 
         actor->SetObjectID(id);
+        UpdateSystemActors(actor.get(), true);
         return actor;
     }
 
@@ -47,6 +49,16 @@ public:
     std::shared_ptr<T> AddSystem(Args&&... args) {
         auto system = std::make_shared<T>(std::forward<Args>(args)...);
         m_systems.push_back(system);
+
+        auto requiredComponents = system->GetRequiredComponents();
+        if (!requiredComponents.empty()) {
+            for (auto& actor : m_actors) {
+                if (actor && actor->HasAllComponents(requiredComponents)) {
+                    system->AttachToActor(actor.get());
+                }
+            }
+        }
+
         return system;
     }
 
@@ -59,6 +71,7 @@ public:
             actor->Update(deltaTime);
         }
     }
+
     [[nodiscard]] std::shared_ptr<AActor> GetActor(FObjectID id) const {
         if (id.index >= m_actors.size()) return nullptr;
         auto actor = m_actors[id.index];
@@ -66,13 +79,52 @@ public:
         if (m_generations[id.index] != id.generation) return nullptr;
         return actor;
     }
+    template <typename T>
+    [[nodiscard]] std::shared_ptr<T> GetActor(FObjectID id) const {
+        static_assert(std::is_base_of_v<AActor, T>, "T must be derived from AActor");
+
+        if (id.index >= m_actors.size()) return nullptr;
+
+        auto actor = std::dynamic_pointer_cast<T>(m_actors[id.index]);
+        if (!actor) return nullptr;
+        if (m_generations[id.index] != id.generation) return nullptr;
+
+        return actor;
+    }
+    template <typename T>
+    [[nodiscard]] std::shared_ptr<T> GetActor() const {
+        static_assert(std::is_base_of_v<AActor, T>, "T must be derived from AActor");
+
+        for (const auto& actor : m_actors) {
+            if (!actor) continue;
+            auto casted = std::dynamic_pointer_cast<T>(actor);
+            if (casted) return casted;
+        }
+
+        return nullptr;
+    }
+
 
     void DestroyActor(const std::shared_ptr<AActor>& actor) {
         FObjectID id = actor->GetObjectID();
         if (id.index < m_actors.size() && m_actors[id.index] == actor) {
+            UpdateSystemActors(actor.get(), false);
+
             m_actors[id.index] = nullptr;
             m_freeList.push_back(id.index);
         }
+    }
+
+    // Получить все системы определенного типа
+    template<typename T>
+    std::vector<std::shared_ptr<T>> GetSystems() {
+        std::vector<std::shared_ptr<T>> result;
+        for (auto& system : m_systems) {
+            if (auto ptr = std::dynamic_pointer_cast<T>(system)) {
+                result.push_back(ptr);
+            }
+        }
+        return result;
     }
 
     FHitResult LineTrace(const glm::vec3& start,
@@ -105,9 +157,18 @@ public:
         return result;
     }
 
-
-
 private:
+    void UpdateSystemActors(AActor* actor, bool adding) {
+        for (auto& system : m_systems) {
+            auto requiredComponents = system->GetRequiredComponents();
+            if (requiredComponents.empty()) continue;
+            bool hasAllComponents = actor->HasAllComponents(requiredComponents);
+            if (adding && hasAllComponents) {
+                system->AttachToActor(actor);
+            }
+        }
+    }
+
     bool RayIntersectsAABB(const glm::vec3& rayOrigin,
                        const glm::vec3& rayDir,
                        const glm::vec3& boxMin,
@@ -144,7 +205,6 @@ private:
 
         return true;
     }
-
 
 private:
     std::vector<uint32_t> m_generations;

@@ -5,6 +5,8 @@
 #pragma once
 #include <vector>
 #include <memory>
+#include <typeinfo>
+#include <algorithm>
 
 #include "UObject.h"
 #include "Core/ECS/Components/UBaseComponent.h"
@@ -34,6 +36,17 @@ public:
     }
 
     template<typename T>
+    std::vector<T*> GetComponents() {
+        std::vector<T*> result;
+        for (auto& comp : m_components) {
+            if (auto ptr = dynamic_cast<T*>(comp.get())) {
+                result.push_back(ptr);
+            }
+        }
+        return result;
+    }
+
+    template<typename T>
     T* GetComponent() {
         for (auto& comp : m_components) {
             if (auto ptr = dynamic_cast<T*>(comp.get())) {
@@ -43,16 +56,47 @@ public:
         return nullptr;
     }
 
+    bool HasComponent(std::type_index componentType) const {
+        for (const auto& comp : m_components) {
+            if (std::type_index(typeid(*comp)) == componentType) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool HasAllComponents(const std::vector<std::type_index>& componentTypes) const {
+        for (auto& compType : componentTypes) {
+            if (!HasComponent(compType)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     void AddSystem(std::shared_ptr<UBaseSystem> system) {
         system->AttachToActor(this);
         m_systems.push_back(system);
     }
+
     virtual FAABB GetBoundingBox() {
         auto transform = GetComponent<UTransformComponent>();
         glm::vec3 pos = transform ? transform->position : glm::vec3(0.0f);
         float half = 0.5f;
         return { pos - glm::vec3(half), pos + glm::vec3(half) };
     }
+
+    template<typename T>
+    std::vector<T*> GetSystems() {
+        std::vector<T*> result;
+        for (auto& sys : m_systems) {
+            if (auto ptr = dynamic_cast<T*>(sys.get())) {
+                result.push_back(ptr);
+            }
+        }
+        return result;
+    }
+
     template<typename T>
     T* GetSystem() {
         for (auto& sys : m_systems) {
@@ -62,8 +106,10 @@ public:
         }
         return nullptr;
     }
+
     void SetObjectID(const FObjectID& id) { m_objectID = id; }
     FObjectID GetObjectID() const { return m_objectID; }
+
     virtual void Update(float deltaTime) {
         for (auto& system : m_systems) {
             system->Update(deltaTime);

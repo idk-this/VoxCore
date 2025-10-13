@@ -87,11 +87,15 @@ void ColumnSystem::Render() {
             else if (align == "Right")
                 childX = columnStartX + (elementWidth - childWidth);
         }
-
+        ImVec4 BGColor = ImVec4(0, 0, 0, 0);
+        if (HasAttribute("BackgroundColor"))
+        {
+            BGColor = ParseColor(GetAttribute("BackgroundColor"));
+        }
         ImGui::SetCursorScreenPos(ImVec2(childX, currentY));
 
         ImGui::PushItemWidth(childWidth);
-        ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32(0,0,0,0));
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, BGColor);
         ImGui::BeginChild((child->GetName() + "_container").c_str(),
                          ImVec2(childWidth, 0),
                          ImGuiChildFlags_AutoResizeY);

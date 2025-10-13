@@ -3,6 +3,8 @@
 //
 
 #pragma once
+#include <regex>
+
 #include "Core/UI/Elements/Common/Button.h"
 #include "Core/UI/Elements/Layouts/ColumnSystem.h"
 #include "Core/UI/Elements/Containers/HUD.h"
@@ -13,6 +15,7 @@
 #include "Core/UI/Elements/Containers/Window.h"
 
 namespace UISystem {
+
     std::shared_ptr<UIElement> UIElementFactory::CreateElement(const std::string& elementType, const std::string& name) {
         std::shared_ptr<UIElement> element = nullptr;
 

@@ -9,31 +9,43 @@
 
 glm::vec3 UCameraComponent::GetForwardVector() const
 {
-    float pitch = glm::radians(RelativeRotation.x);
-    float yaw   = glm::radians(RelativeRotation.y);
+    // Создаем кватернион вращения из углов Эйлера
+    // Порядок: Yaw (Y), Pitch (X), Roll (Z) - но Roll игнорируем для FPS камеры
+    glm::quat rotation = glm::quat(glm::vec3(
+        glm::radians(RelativeRotation.x), // Pitch
+        glm::radians(RelativeRotation.y), // Yaw
+        0.0f // Roll = 0 для FPS камеры
+    ));
 
-    glm::vec3 forward;
-    forward.x = cos(pitch) * cos(yaw);
-    forward.y = sin(pitch);
-    forward.z = cos(pitch) * sin(yaw);
-
+    // Вектор "вперед" в локальном пространстве камеры
+    glm::vec3 forward = rotation * glm::vec3(0.0f, 0.0f, -1.0f);
     return glm::normalize(forward);
+}
+
+glm::vec3 UCameraComponent::GetRightVector() const
+{
+    // Вектор "вправо" перпендикулярен forward и мировому up
+    glm::vec3 forward = GetForwardVector();
+    glm::vec3 worldUp = glm::vec3(0.0f, 1.0f, 0.0f);
+    glm::vec3 right = glm::cross(forward, worldUp);
+    return glm::normalize(right);
+}
+
+glm::vec3 UCameraComponent::GetUpVector() const
+{
+    glm::vec3 forward = GetForwardVector();
+    glm::vec3 right = GetRightVector();
+    glm::vec3 up = glm::cross(right, forward);
+    return glm::normalize(up);
 }
 
 glm::mat4 UCameraComponent::GetViewMatrix() const
 {
     glm::vec3 worldPos = GetWorldPosition();
+    glm::vec3 forward = GetForwardVector();
+    glm::vec3 up = GetUpVector();
 
-    glm::quat qYaw   = glm::angleAxis(glm::radians(-RelativeRotation.y), glm::vec3(0, 1, 0));
-    glm::quat qPitch = glm::angleAxis(glm::radians(-RelativeRotation.x), glm::vec3(1, 0, 0));
-    glm::quat qRoll  = glm::angleAxis(glm::radians(RelativeRotation.z), glm::vec3(0, 0, 1));
-
-    glm::quat orientation = qYaw * qPitch * qRoll;
-    auto* transform = m_owner->GetComponent<UTransformComponent>();
-    glm::vec3 front = transform ? transform->GetForwardVector() : glm::vec3(0.0f, 0.0f, -1.0f);
-    glm::vec3 up = transform ? transform->GetUpVector() : glm::vec3(0.0f, 1.0f, 0.0f);
-
-    return glm::lookAt(worldPos, worldPos + front, up);
+    return glm::lookAt(worldPos, worldPos + forward, up);
 }
 
 glm::mat4 UCameraComponent::GetProjectionMatrix() const

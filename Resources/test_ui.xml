@@ -70,7 +70,7 @@
         </ColumnSystem>
 
         <TextBlock Name="Footer" Text="© 2025 Hueta inc - Adaptive Layout System"
-                   ColumnSpan="12" Align="Center" Height="25" Color="169,169,169"/>
+                   ColumnSpan="12" Align="Center"  VerticalAlign="Bottom" Height="25" Color="169,169,169"/>
 
     </ColumnSystem>
 </Window>
