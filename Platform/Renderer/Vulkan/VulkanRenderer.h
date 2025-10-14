@@ -16,7 +16,6 @@
 #include "Core/VulkanInstance.h"
 #include "Common/VulkanCameraUBO.h"
 #include "Common/VulkanTexture.h"
-#include "Pipeline/GraphicsPipeline.h"
 #include "Core/Export.h"
 #include "Core/VulkanContext.h"
 #include "Core/Common/VoxPak.h"

@@ -18,6 +18,7 @@ public:
     bool Init();
     void Update(void* cmd, const CameraData& data) override;
     vk::DescriptorSetLayout GetDescriptorSetLayout() const { return m_cameraDescriptorSetLayout;}
+    void SetDescriptorSetLayout(vk::DescriptorSetLayout layout) { m_cameraDescriptorSetLayout = layout; }
     vk::DescriptorSet& GetDescriptorSet() { return m_cameraDescriptorSet; }
     VulkanBuffer* GetBuffer() const { return m_cameraBuffer; }
 

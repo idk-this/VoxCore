@@ -14,7 +14,14 @@ class VulkanSwapChain;
 class VulkanRenderPass;
 class VulkanCommandSystem;
 class IShaderPipeline;
-enum class PipelineType;
+enum class PipelineType {
+    Graphics,
+};
+struct VulkanPipelineData {
+    vk::Pipeline pipeline;
+    vk::PipelineLayout layout;
+    std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
+};
 
 
 struct VulkanContext {
@@ -23,7 +30,7 @@ struct VulkanContext {
     std::unique_ptr<LogicalDevice> logicalDevice;
     std::unique_ptr<VulkanSwapChain> swapchain;
     std::unique_ptr<VulkanRenderPass> renderPass;
-    std::unordered_map<PipelineType, std::unique_ptr<IShaderPipeline>> pipelines;
+    std::unordered_map<PipelineType, VulkanPipelineData> pipelines;
     std::unique_ptr<VulkanCommandSystem> commandSystem;
     vk::SurfaceKHR surface = nullptr;
 };

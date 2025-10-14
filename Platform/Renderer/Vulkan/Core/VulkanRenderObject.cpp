@@ -9,7 +9,7 @@
 #include "Core/Log/Logger.h"
 #include "Platform/Renderer/Vulkan/Common/VulkanBuffer.h"
 #include "Platform/Renderer/Vulkan/Common/VulkanTexture.h"
-#include "Platform/Renderer/Vulkan/Pipeline/IPipeline.h"
+
 
 VulkanRenderObject::VulkanRenderObject(VulkanContext* context, UMeshComponent* mesh)
     : m_context(context), m_mesh(mesh) {}
@@ -88,7 +88,7 @@ bool VulkanRenderObject::CreateTextureResources(UTexture* texture) {
 
         m_context->logicalDevice->GetHandle().waitIdle();
 
-        auto layout = m_context->pipelines[PipelineType::Graphics]->GetDescriptorSetLayout(1);
+        auto layout = m_context->pipelines[PipelineType::Graphics].descriptorSetLayouts[1];
         if (!layout) {
             LOG_ERROR("Vulkan", "Texture descriptor set layout not found");
             return false;
@@ -131,27 +131,36 @@ bool VulkanRenderObject::Draw(const std::any& drawInfo) {
 
     try {
         auto info = std::any_cast<VulkanDrawCallInfo>(drawInfo);
+
+        // Привязываем индексный буфер
         info.commandContext.bindIndexBuffer(m_indexBuffer->GetBuffer(), 0, vk::IndexType::eUint32);
+
+        // Привязываем дескрипторные наборы
         if (m_textureDescriptorSet) {
-            std::array<vk::DescriptorSet, 2> descriptorSets = { info.cameraData, m_textureDescriptorSet };
+            std::array<vk::DescriptorSet, 2> descriptorSets = {
+                info.cameraData,  // set = 0
+                m_textureDescriptorSet  // set = 1
+            };
             info.commandContext.bindDescriptorSets(
                 vk::PipelineBindPoint::eGraphics,
-                m_context->pipelines[PipelineType::Graphics]->GetLayout(),
-                0,
+                m_context->pipelines[PipelineType::Graphics].layout,
+                0,  // firstSet
                 static_cast<uint32_t>(descriptorSets.size()),
                 descriptorSets.data(),
                 0, nullptr
             );
         } else {
+            // Если текстуры нет, привязываем только камеру
             info.commandContext.bindDescriptorSets(
                 vk::PipelineBindPoint::eGraphics,
-                m_context->pipelines[PipelineType::Graphics]->GetLayout(),
-                0,
+                m_context->pipelines[PipelineType::Graphics].layout,
+                0,  // firstSet
                 1,
                 &info.cameraData,
                 0, nullptr
             );
         }
+
         info.commandContext.drawIndexed(m_indexCount, 1, 0, 0, 0);
         return true;
     }

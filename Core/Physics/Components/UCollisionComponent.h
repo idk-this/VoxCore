@@ -28,6 +28,7 @@ public:
     void SetCollisionEnabled(bool enabled) { m_collisionEnabled = enabled; }
     [[nodiscard]] bool IsTrigger() const { return m_isTrigger; }
     [[nodiscard]] bool IsCollisionEnabled() const { return m_collisionEnabled; }
+    [[nodiscard]] FAABB GetBoundingBox() const { return m_boundingBox; }
 
 private:
     std::vector<FCollisionBox> m_collisionBoxes;

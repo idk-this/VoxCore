@@ -12,7 +12,6 @@
 #include "Commands/VulkanCommandSystem.h"
 #include "Devices/LogicalDevice.h"
 #include "Devices/PhysicalDevice.h"
-#include "Pipeline/GraphicsPipeline.h"
 #include "RenderPass/VulkanRenderPass.h"
 #include "Swapchain/VulkanSwapChain.h"
 #include "Core/ECS/Base/UWorld.h"
@@ -37,6 +36,7 @@
 
 #include "Core/VulkanRenderObject.h"
 #include "Core/VulkanResourceManager.h"
+#include "Pipeline/VulkanPipelineFactory.h"
 
 DECLARE_CONVAR_MINMAX("r_max_frames_in_flight", 2, 1, 4, "Maximum number of frames in flight for swapchain", CVAR_ARCHIVE);
 
@@ -53,10 +53,7 @@ VulkanRenderer::VulkanRenderer()
 	m_context->swapchain       = std::make_unique<VulkanSwapChain>(m_context.get());
 	m_context->renderPass      = std::make_unique<VulkanRenderPass>(m_context.get());
 
-	m_context->pipelines.emplace(
-		PipelineType::Graphics,
-		std::make_unique<GraphicsPipeline>(m_context.get())
-	);
+
 	m_context->commandSystem   = std::make_unique<VulkanCommandSystem>(m_context.get());
 
 	if (!m_shaderPak.Open(Engine::FileSystem::GetWorkingDirectory() + "Content/Paks/VulkanShaders.voxpak"))
@@ -72,6 +69,7 @@ VulkanRenderer::~VulkanRenderer() {
 	//Cleanup();
 };
 VulkanShader* vulkanShader = nullptr;;
+
 bool VulkanRenderer::Init(IWindow *window, UWorld* world) {
 	if (!m_context->instance->Init()) {
 		return  false;
@@ -93,29 +91,83 @@ bool VulkanRenderer::Init(IWindow *window, UWorld* world) {
 	vulkanShader->LoadFromSource(m_shaderPak.ReadFileWithOverrideString("SimpleRectangle.shader"));
 
 	m_window = window;
-	m_context->pipelines[PipelineType::Graphics]->SetShader(vulkanShader);
+
+	std::vector<VertexInputLayout> vertexLayouts;
+
+    VertexInputLayout vertexLayout{};
+    vertexLayout.stride = sizeof(Vertex);
+    vertexLayout.inputRate = vk::VertexInputRate::eVertex;
+    vertexLayout.attributes = {
+        {0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, position)},
+        {1, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, color)},
+        {2, vk::Format::eR32G32Sfloat, offsetof(Vertex, texCoord)}
+    };
+    vertexLayouts.push_back(vertexLayout);
+
+	VertexInputLayout instanceLayout{};
+	instanceLayout.stride = sizeof(InstanceData);
+	instanceLayout.inputRate = vk::VertexInputRate::eInstance;
+	instanceLayout.attributes = {
+		{3, vk::Format::eR32G32B32A32Sfloat, offsetof(InstanceData, model) + sizeof(glm::vec4) * 0},
+		{4, vk::Format::eR32G32B32A32Sfloat, offsetof(InstanceData, model) + sizeof(glm::vec4) * 1},
+		{5, vk::Format::eR32G32B32A32Sfloat, offsetof(InstanceData, model) + sizeof(glm::vec4) * 2},
+		{6, vk::Format::eR32G32B32A32Sfloat, offsetof(InstanceData, model) + sizeof(glm::vec4) * 3},
+		{7, vk::Format::eR32G32B32Sfloat, offsetof(InstanceData, color)}
+	};
+    vertexLayouts.push_back(instanceLayout);
+
+    std::vector<DescriptorBinding> descriptorBindings = {
+        {0, 0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},       // CameraUBO
+        {1, 0, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment} // Texture
+    };
+
+
+    PipelineStateConfig stateConfig{};
+    stateConfig.inputAssembly.topology = vk::PrimitiveTopology::eTriangleList;
+    stateConfig.rasterization.polygonMode = vk::PolygonMode::eFill;
+    stateConfig.rasterization.cullMode = vk::CullModeFlagBits::eNone;
+    stateConfig.rasterization.frontFace = vk::FrontFace::eClockwise;
+    stateConfig.rasterization.lineWidth = 1.0f;
+	stateConfig.viewport.x = 0.0f;
+	stateConfig.viewport.y = 0.0f;
+	stateConfig.viewport.width = (float)windowExtent.width;
+	stateConfig.viewport.height = (float)windowExtent.height;
+	stateConfig.viewport.minDepth = 0.0f;
+	stateConfig.viewport.maxDepth = 1.0f;
+
+	stateConfig.scissor.offset = vk::Offset2D{0, 0};
+	stateConfig.scissor.extent = windowExtent;
+
+    vk::PipelineColorBlendAttachmentState colorAttachment{};
+    colorAttachment.colorWriteMask =
+        vk::ColorComponentFlagBits::eR |
+        vk::ColorComponentFlagBits::eG |
+        vk::ColorComponentFlagBits::eB |
+        vk::ColorComponentFlagBits::eA;
+    colorAttachment.blendEnable = VK_FALSE;
+    stateConfig.colorBlend.attachmentCount = 1;
+    stateConfig.colorBlend.pAttachments = &colorAttachment;
+
+    stateConfig.depthStencil.depthTestEnable = VK_TRUE;
+    stateConfig.depthStencil.depthWriteEnable = VK_TRUE;
+    stateConfig.depthStencil.depthCompareOp = vk::CompareOp::eLessOrEqual;
+    stateConfig.multisample.rasterizationSamples = vk::SampleCountFlagBits::e1;
+
+    PipelineConfig pipelineCfg{};
+    pipelineCfg.shader = vulkanShader;
+    pipelineCfg.vertexLayouts = vertexLayouts;
+    pipelineCfg.descriptorBindings = descriptorBindings;
+    pipelineCfg.stateConfig = stateConfig;
 	InitImGuiForVulkan(window);
 
-    m_cameraUBO->PreInit();
-	auto cameraLayout = m_cameraUBO->GetDescriptorSetLayout();
-
-	vk::DescriptorSetLayoutBinding samplerLayoutBinding{};
-	samplerLayoutBinding.binding = 0;
-	samplerLayoutBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-	samplerLayoutBinding.descriptorCount = 1;
-	samplerLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
-	samplerLayoutBinding.pImmutableSamplers = nullptr;
-
-	vk::DescriptorSetLayoutCreateInfo samplerLayoutInfo{};
-	samplerLayoutInfo.bindingCount = 1;
-	samplerLayoutInfo.pBindings = &samplerLayoutBinding;
-
-	m_textureLayout = m_context->logicalDevice->GetHandle().createDescriptorSetLayout(samplerLayoutInfo);
-	m_context->pipelines[PipelineType::Graphics]->AddDescriptorSetLayout(cameraLayout);
-	m_context->pipelines[PipelineType::Graphics]->AddDescriptorSetLayout(m_textureLayout);
-
-
-	m_context->pipelines[PipelineType::Graphics]->Init();
+	auto pipelineResult = VulkanPipelineFactory::CreatePipeline(m_context.get(), pipelineCfg);
+	m_cameraUBO->SetDescriptorSetLayout(pipelineResult.descriptorSetLayouts[0]);
+	m_textureLayout = pipelineResult.descriptorSetLayouts[1];
+	VulkanPipelineData data;
+	data.pipeline = pipelineResult.pipeline;
+	data.layout = pipelineResult.layout;
+	data.descriptorSetLayouts = pipelineResult.descriptorSetLayouts;
+	m_context->pipelines[PipelineType::Graphics] = data;
 	m_context->swapchain->CreateFramebuffers(m_context->renderPass.get());
 	if (!m_context->commandSystem->Init()) {
 		return false;
@@ -174,7 +226,7 @@ void VulkanRenderer::ProcessRender() {
     renderPassBeginInfo.pClearValues = clearValues.data();
 
     cmd.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
-    cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_context->pipelines[PipelineType::Graphics]->GetPipeline());
+    cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_context->pipelines[PipelineType::Graphics].pipeline);
 	m_renderObjectManager->UpdateWorldState(m_world);
 	m_renderObjectManager->RenderObjects(cmd, m_cameraUBO.get(), m_currentFrame);
 	if (g_imguiInitialized) {
@@ -240,7 +292,7 @@ void VulkanRenderer::Cleanup() {
 	m_context->swapchain.reset();
 
 	m_context->renderPass.reset();
-	m_context->pipelines[PipelineType::Graphics].reset();
+	//m_context->pipelines[PipelineType::Graphics].reset();
 	for (auto& semaphore : m_imageAvailableSemaphores) {
 		if (semaphore) {
 			m_context->logicalDevice->GetHandle().destroySemaphore(semaphore);

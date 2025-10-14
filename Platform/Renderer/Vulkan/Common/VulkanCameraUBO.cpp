@@ -5,7 +5,7 @@
 #include "VulkanCameraUBO.h"
 
 #include "Platform/Renderer/Vulkan/Devices/LogicalDevice.h"
-#include "Platform/Renderer/Vulkan/Pipeline/GraphicsPipeline.h"
+
 
 VulkanCameraUBO::VulkanCameraUBO(VulkanContext* context)
 {
@@ -44,5 +44,12 @@ bool VulkanCameraUBO::Init()
 void VulkanCameraUBO::Update(void* cmd, const CameraData& data)
 {
     m_cameraBuffer->UpdateBufferData(data);
-    m_context->pipelines[PipelineType::Graphics]->BindDescriptorSet((vk::CommandBuffer*)cmd, m_cameraDescriptorSet);
+    vk::CommandBuffer commandBuffer = *reinterpret_cast<vk::CommandBuffer*>(cmd);
+    commandBuffer.bindDescriptorSets(
+        vk::PipelineBindPoint::eGraphics,
+        m_context->pipelines[PipelineType::Graphics].layout,
+        0,
+        m_cameraDescriptorSet,
+        nullptr
+    );
 }

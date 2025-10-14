@@ -6,7 +6,7 @@
 
 #include "Core/ECS/Base/UWorld.h"
 #include "Core/Log/Logger.h"
-
+#include "glm/gtx/string_cast.hpp"
 VulkanResourceManager::VulkanResourceManager(VulkanContext* context)
     : m_context(context)
 {
@@ -136,7 +136,6 @@ bool VulkanResourceManager::UpdateInstanceBuffer(UMeshComponent* mesh, const std
 
     m_instanceBuffer->Create(sizeof(InstanceData) * instances.size(), vk::BufferUsageFlagBits::eVertexBuffer);
     m_instanceBuffer->UpdateBufferDataArray(instances);
-
     return true;
 }
 
@@ -149,11 +148,19 @@ void VulkanResourceManager::RenderObjects(vk::CommandBuffer& cmd, VulkanCameraUB
         if (!actor) continue;
 
         if (UpdateInstanceBuffer(renderObject->m_mesh, {actor})) {
-            std::vector<vk::Buffer> buffers;
-            buffers.push_back(renderObject->GetVertexBuffer()->GetBuffer());
-            buffers.push_back(m_instanceBuffer->GetBuffer());
-            vk::DeviceSize offsets[] = {0, 0};
-            cmd.bindVertexBuffers(0, buffers.size(), buffers.data(), offsets);
+            // ПРИВЯЗЫВАЕМ ВЕРШИННЫЕ БУФЕРЫ
+            std::vector<vk::Buffer> vertexBuffers;
+            std::vector<vk::DeviceSize> offsets;
+
+            // Вершинный буфер (binding 0)
+            vertexBuffers.push_back(renderObject->GetVertexBuffer()->GetBuffer());
+            offsets.push_back(0);
+
+            // Инстансный буфер (binding 1)
+            vertexBuffers.push_back(m_instanceBuffer->GetBuffer());
+            offsets.push_back(0);
+
+            cmd.bindVertexBuffers(0, vertexBuffers.size(), vertexBuffers.data(), offsets.data());
 
             VulkanDrawCallInfo drawCallInfo{
                 cmd,
@@ -162,7 +169,6 @@ void VulkanResourceManager::RenderObjects(vk::CommandBuffer& cmd, VulkanCameraUB
             };
 
             renderObject->Draw(drawCallInfo);
-            //m_renderedVertices += renderObject->GetIndexCount();
         }
     }
 }

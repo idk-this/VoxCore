@@ -29,8 +29,9 @@ public:
         RelativeRotation.y += yawOffset;
         RelativeRotation.x += pitchOffset;
 
-        RelativeRotation.y = glm::mod(RelativeRotation.y + 180.0f, 360.0f) - 180.0f;
-        RelativeRotation.x = glm::clamp(RelativeRotation.x, -89.0f, 89.0f); // Ограничиваем pitch для предотвращения flip
+        // Нормализуем углы
+        RelativeRotation.y = glm::mod(RelativeRotation.y, 360.0f);
+        RelativeRotation.x = glm::clamp(RelativeRotation.x, -89.0f, 89.0f);
     }
 
     [[nodiscard]] glm::mat4 GetViewMatrix() const;
@@ -39,4 +40,7 @@ public:
     [[nodiscard]] glm::vec3 GetForwardVector() const;
     [[nodiscard]] glm::vec3 GetRightVector() const;
     [[nodiscard]] glm::vec3 GetUpVector() const;
+
+private:
+    [[nodiscard]] glm::quat GetOrientation() const;
 };
