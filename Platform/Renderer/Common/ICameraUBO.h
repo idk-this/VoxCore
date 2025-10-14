@@ -8,6 +8,8 @@
 struct CameraData {
     glm::mat4 view;
     glm::mat4 proj;
+    glm::vec3 pos;
+    float padding;
 };
 
 class  ICameraUBO {

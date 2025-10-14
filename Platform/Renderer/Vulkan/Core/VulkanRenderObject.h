@@ -41,7 +41,8 @@ private:
     bool CreateBuffers(const std::vector<glm::vec3>& vertices,
                        const std::vector<uint32_t>& indices,
                        const std::vector<glm::vec3>& colors,
-                       const std::vector<glm::vec2>& texCoords);
+                       const std::vector<glm::vec2>& texCoords,
+                       const std::vector<glm::vec3>& normals);
     bool CreateTextureResources(UTexture* texture);
 
 public:

@@ -18,6 +18,7 @@ class VOXCORE_API VoxPak {
 public:
     bool Open(const std::string& pakFile);
     [[nodiscard]] std::vector<std::string> ListFiles() const;
+    std::vector<std::string> ListFiles(const std::string& folder = "") const;
     std::vector<uint8_t> ReadFile(const std::string& path) const;
     std::vector<std::filesystem::path> pakModOverride;
 

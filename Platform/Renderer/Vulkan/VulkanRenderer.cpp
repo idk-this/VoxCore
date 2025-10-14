@@ -62,6 +62,7 @@ VulkanRenderer::VulkanRenderer()
 	}
 
 	m_cameraUBO = std::make_unique<VulkanCameraUBO>(m_context.get());
+	m_lightUBO = std::make_unique<VulkanLightUBO>(m_context.get());
 	m_renderObjectManager = std::make_unique<VulkanResourceManager>(m_context.get());
 
 } ;
@@ -100,7 +101,8 @@ bool VulkanRenderer::Init(IWindow *window, UWorld* world) {
     vertexLayout.attributes = {
         {0, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, position)},
         {1, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, color)},
-        {2, vk::Format::eR32G32Sfloat, offsetof(Vertex, texCoord)}
+        {2, vk::Format::eR32G32Sfloat, offsetof(Vertex, texCoord)},
+		{3, vk::Format::eR32G32B32Sfloat, offsetof(Vertex, normal)}
     };
     vertexLayouts.push_back(vertexLayout);
 
@@ -108,17 +110,18 @@ bool VulkanRenderer::Init(IWindow *window, UWorld* world) {
 	instanceLayout.stride = sizeof(InstanceData);
 	instanceLayout.inputRate = vk::VertexInputRate::eInstance;
 	instanceLayout.attributes = {
-		{3, vk::Format::eR32G32B32A32Sfloat, offsetof(InstanceData, model) + sizeof(glm::vec4) * 0},
-		{4, vk::Format::eR32G32B32A32Sfloat, offsetof(InstanceData, model) + sizeof(glm::vec4) * 1},
-		{5, vk::Format::eR32G32B32A32Sfloat, offsetof(InstanceData, model) + sizeof(glm::vec4) * 2},
-		{6, vk::Format::eR32G32B32A32Sfloat, offsetof(InstanceData, model) + sizeof(glm::vec4) * 3},
-		{7, vk::Format::eR32G32B32Sfloat, offsetof(InstanceData, color)}
+		{4, vk::Format::eR32G32B32A32Sfloat, offsetof(InstanceData, model) + sizeof(glm::vec4) * 0},
+		{5, vk::Format::eR32G32B32A32Sfloat, offsetof(InstanceData, model) + sizeof(glm::vec4) * 1},
+		{6, vk::Format::eR32G32B32A32Sfloat, offsetof(InstanceData, model) + sizeof(glm::vec4) * 2},
+		{7, vk::Format::eR32G32B32A32Sfloat, offsetof(InstanceData, model) + sizeof(glm::vec4) * 3},
+		{8, vk::Format::eR32G32B32Sfloat, offsetof(InstanceData, color)}
 	};
     vertexLayouts.push_back(instanceLayout);
 
     std::vector<DescriptorBinding> descriptorBindings = {
         {0, 0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},       // CameraUBO
-        {1, 0, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment} // Texture
+        {1, 0, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment}, // Texture
+    	{2, 0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eVertex}
     };
 
 
@@ -163,6 +166,7 @@ bool VulkanRenderer::Init(IWindow *window, UWorld* world) {
 	auto pipelineResult = VulkanPipelineFactory::CreatePipeline(m_context.get(), pipelineCfg);
 	m_cameraUBO->SetDescriptorSetLayout(pipelineResult.descriptorSetLayouts[0]);
 	m_textureLayout = pipelineResult.descriptorSetLayouts[1];
+	m_lightUBO->SetDescriptorSetLayout(pipelineResult.descriptorSetLayouts[2]);
 	VulkanPipelineData data;
 	data.pipeline = pipelineResult.pipeline;
 	data.layout = pipelineResult.layout;
@@ -174,6 +178,8 @@ bool VulkanRenderer::Init(IWindow *window, UWorld* world) {
 	}
 
 	m_cameraUBO->Init();
+	m_lightUBO->Init();
+
 	m_imageAvailableSemaphores.resize(GET_CVAR(int, "r_max_frames_in_flight"));
 	m_renderFinishedSemaphores.resize(m_context->swapchain->GetImageCount());
 	m_inFlightFences.resize(GET_CVAR(int, "r_max_frames_in_flight"));
@@ -208,9 +214,17 @@ void VulkanRenderer::ProcessRender() {
     if (camera) {
         CameraData camera_data = {
             camera->GetViewMatrix(),
-            camera->GetProjectionMatrix()
+            camera->GetProjectionMatrix(),
+        	camera->GetWorldPosition()
         };
         m_cameraUBO->Update(&cmd, camera_data);
+    	LightData lightData;
+    	lightData.position = glm::vec3(2.0f, 5.0f, 2.0f);
+    	lightData.color = glm::vec3(1.0f, 1.0f, 1.0f);
+    	lightData.ambient = glm::vec3(0.1f, 0.1f, 0.1f);
+    	lightData.intensity = 1.0f;
+    	lightData.specularPower = 32.0f;
+    	m_lightUBO->Update(&cmd, lightData);
     }
 
     std::array<vk::ClearValue, 2> clearValues{};

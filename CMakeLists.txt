@@ -21,6 +21,7 @@ set(LIBS_DST "${CMAKE_BINARY_DIR}/$<CONFIG>/Engine")
 
 add_subdirectory(libs/googletest)
 add_subdirectory(libs/pugixml)
+add_subdirectory(libs/json)
 
 set(SDL_STATIC ON CACHE BOOL "" FORCE)
 add_subdirectory(libs/SDL)
@@ -84,6 +85,7 @@ target_link_libraries(VoxCore PRIVATE
         SDL3-static
         Vulkan::Vulkan
         pugixml
+        nlohmann_json::nlohmann_json
 )
 
 

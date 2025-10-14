@@ -6,6 +6,7 @@
 #include <fstream>
 #include <filesystem>
 #include <string.h>
+#include <unordered_set>
 
 #include "Core/CVar/CVar.h"
 #include "Core/Log/Logger.h"
@@ -66,7 +67,67 @@ bool VoxPak::Open(const std::string& pakFile) {
 
 std::vector<std::string> VoxPak::ListFiles() const {
     std::vector<std::string> out;
-    for(auto& e : entries) out.push_back(e.path);
+    std::unordered_set<std::string> seen;
+
+    for (auto& e : entries) {
+        out.push_back(e.path);
+        seen.insert(e.path);
+    }
+
+    for (auto& pakDir : pakModOverride) {
+        if (!std::filesystem::exists(pakDir) || !std::filesystem::is_directory(pakDir))
+            continue;
+
+        for (auto& entry : std::filesystem::recursive_directory_iterator(pakDir)) {
+            if (!entry.is_regular_file())
+                continue;
+
+            std::filesystem::path relPath = std::filesystem::relative(entry.path(), pakDir);
+            std::string pathStr = relPath.generic_string();
+
+            if (!seen.count(pathStr)) {
+                out.push_back(pathStr);
+                seen.insert(pathStr);
+            }
+        }
+    }
+
+    return out;
+}
+
+std::vector<std::string> VoxPak::ListFiles(const std::string& folder) const
+{
+    std::vector<std::string> out;
+    std::unordered_set<std::string> seen;
+    std::string prefix = folder;
+    if (!prefix.empty() && prefix.back() != '/')
+        prefix += '/';
+
+    for (auto& e : entries) {
+        if (prefix.empty() || e.path.rfind(prefix, 0) == 0) {
+            out.push_back(e.path);
+            seen.insert(e.path);
+        }
+    }
+
+    for (auto& pakDir : pakModOverride) {
+        if (!std::filesystem::exists(pakDir) || !std::filesystem::is_directory(pakDir))
+            continue;
+
+        for (auto& entry : std::filesystem::recursive_directory_iterator(pakDir)) {
+            if (!entry.is_regular_file())
+                continue;
+
+            std::filesystem::path relPath = std::filesystem::relative(entry.path(), pakDir);
+            std::string pathStr = relPath.generic_string();
+
+            if ((prefix.empty() || pathStr.rfind(prefix, 0) == 0) && !seen.count(pathStr)) {
+                out.push_back(pathStr);
+                seen.insert(pathStr);
+            }
+        }
+    }
+
     return out;
 }
 

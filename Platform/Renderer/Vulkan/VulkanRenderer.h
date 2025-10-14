@@ -15,6 +15,7 @@
 
 #include "Core/VulkanInstance.h"
 #include "Common/VulkanCameraUBO.h"
+#include "Common/VulkanLightUBO.h"
 #include "Common/VulkanTexture.h"
 #include "Core/Export.h"
 #include "Core/VulkanContext.h"
@@ -57,6 +58,8 @@ private:
     bool InitImGuiForVulkan(IWindow* window);
     IWindow* m_window;
     VoxPak m_shaderPak;
+    std::unique_ptr<VulkanLightUBO> m_lightUBO;
+    vk::DescriptorSetLayout m_lightLayout;
 
     std::vector<vk::Semaphore> m_imageAvailableSemaphores;
     std::vector<vk::Semaphore> m_renderFinishedSemaphores;

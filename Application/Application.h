@@ -64,7 +64,10 @@ namespace Engine {
         std::shared_ptr<ULocalPlayer> m_localPlayer;
         std::shared_ptr<ImGuiWrapper> m_imgui;
     };
-
+    template<typename T>
+    inline T& GetCurrentContext() {
+        return *static_cast<T*>(Application::Get());
+    }
     inline Application& GetCurrentContext() {
         return *Application::Get();
     }
