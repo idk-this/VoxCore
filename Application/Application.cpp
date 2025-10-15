@@ -62,14 +62,6 @@ Application::Application()
     m_imgui = std::make_shared<ImGuiWrapper>(ImGuiBackendGraphicsAPI::Vulkan, ImGuiBackendWindowAPI::SDL3);
 };
 
-class LocalPlayer : public AActor {
-    UCLASS(localPlayer);
-public:
-    LocalPlayer() {
-        AddComponent(std::make_shared<UTransformComponent>());
-        AddComponent(std::make_shared<UCameraComponent>());
-    }
-};
 
 Application::~Application() = default;
 
@@ -81,20 +73,17 @@ Application* Application::Get()
 void Application::Run() {
 
 }
-std::shared_ptr<LocalPlayer> testPlayer;
 void Application::Init() {
+    m_logSystem->add_output("*", std::cout);
+    LOG_INFO("VoxCore", "Using engine version: {} (Build number: {})", ENGINE_VERSION_STR, ENGINE_BUILD_NUMBER);
+    LOG_INFO("VoxCore", "Engine build date: {}", ENGINE_BUILD_DATE);
+    LOG_INFO("VoxCore", "Engine build type: {}", ENGINE_BUILD_TYPE);
     //CVarManager::Instance().LoadFromFile(FileSystem::GetWorkingDirectory() + "/Config/CVars.cfg");
 }
 
 // Updates application state (every frame)
 void Application::Update(float dt) {
     m_world->Update(dt);
-    if (!testPlayer)
-    {
-        testPlayer = m_world->SpawnActor<LocalPlayer>();
-    }
-
-
 
 }
 
