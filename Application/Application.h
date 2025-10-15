@@ -37,12 +37,13 @@ namespace Engine {
         IRenderer* GetRenderer() {
             return renderer.get();
         }
-        Logger& GetLogSystem() const { return *m_logSystem; }
+        [[nodiscard]] Logger& GetLogSystem() const { return *m_logSystem; }
         CVarManager& GetCVar() const { return *m_cvar; }
         std::shared_ptr<ULocalPlayer> GetLocalPlayer() const { return m_localPlayer; }
         IWindow* GetWindow() const { return window.get(); }
         UWorld* GetWorld() const { return m_world.get(); }
         ImGuiWrapper* GetImGui() const { return m_imgui.get(); }
+        std::shared_ptr<VoxPak> GetPak(const std::string& pakName) const;
 
     protected:
         // Initializes application resources
@@ -60,6 +61,8 @@ namespace Engine {
         Application& operator=(const Application&) = delete;
 
         void MainLoop();
+        bool RegisterPak(const std::string& pakName);
+
         bool isRunning = true;
         std::shared_ptr<UWorld> m_world;
         std::string appName = "Engine Application";
@@ -72,6 +75,7 @@ namespace Engine {
         std::unique_ptr<CVarManager> m_cvar;
         std::shared_ptr<ULocalPlayer> m_localPlayer;
         std::shared_ptr<ImGuiWrapper> m_imgui;
+        std::unordered_map<std::string, std::shared_ptr<VoxPak>> m_registeredPaks;
     };
     template<typename T>
     inline T& GetCurrentContext() {

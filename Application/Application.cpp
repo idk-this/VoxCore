@@ -22,6 +22,7 @@
 #include "../Core/UI/Core/DataBinding.h"
 #include "../Core/UI/Core/XMLParser.h"
 #include "Core/Utils/FileSystem.h"
+#include "Core/EngineInfo.h"
 #include "Platform/Window/Components/WindowInputComponent.h"
 
 using namespace Engine;
@@ -73,11 +74,27 @@ Application* Application::Get()
 void Application::Run() {
 
 }
+
+std::shared_ptr<VoxPak> Application::GetPak(const std::string& pakName) const
+{
+    auto it = m_registeredPaks.find(pakName);
+    if (it != m_registeredPaks.end()) {
+        return it->second;
+    }
+    return nullptr;
+}
+
 void Application::Init() {
     m_logSystem->add_output("*", std::cout);
     LOG_INFO("VoxCore", "Using engine version: {} (Build number: {})", ENGINE_VERSION_STR, ENGINE_BUILD_NUMBER);
     LOG_INFO("VoxCore", "Engine build date: {}", ENGINE_BUILD_DATE);
     LOG_INFO("VoxCore", "Engine build type: {}", ENGINE_BUILD_TYPE);
+
+    if (!RegisterPak("Shaders"))
+    {
+        LOG_FATAL("VoxCore", "Engine cant work without shaders...");
+        return;
+    }
     //CVarManager::Instance().LoadFromFile(FileSystem::GetWorkingDirectory() + "/Config/CVars.cfg");
 }
 
@@ -120,4 +137,17 @@ void Application::MainLoop() {
 
     }
 
+}
+
+bool Application::RegisterPak(const std::string& pakName)
+{
+    std::shared_ptr<VoxPak> pak = std::make_shared<VoxPak>();
+    bool isRegisted = pak->Open(FileSystem::GetWorkingDirectory() + "/Content/Paks/" + pakName + ".vxpk");
+    if (!isRegisted)
+    {
+        LOG_ERROR("VoxCore", "Failed to register pak: {}", pakName);
+        return false;
+    }
+    m_registeredPaks[pakName] = pak;
+    return true;
 }

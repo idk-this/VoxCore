@@ -1,4 +1,3 @@
-# Engine/CMakeLists.txt
 cmake_minimum_required(VERSION 3.16)
 project(VoxCore VERSION 0.0.1 LANGUAGES CXX)
 
@@ -8,20 +7,39 @@ set(ENGINE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
 set(ENGINE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
 set(ENGINE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
 
+set(ENGINE_INFO_FILE "${CMAKE_CURRENT_SOURCE_DIR}/Core/EngineInfo.h")
+
+add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/build_number_trigger
+        COMMAND ${CMAKE_COMMAND}
+        -D ENGINE_INFO_FILE=${ENGINE_INFO_FILE}
+        -D PROJECT_VERSION_MAJOR=${PROJECT_VERSION_MAJOR}
+        -D PROJECT_VERSION_MINOR=${PROJECT_VERSION_MINOR}
+        -D PROJECT_VERSION_PATCH=${PROJECT_VERSION_PATCH}
+        -D CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/update_build_number.cmake
+        COMMENT "Updating build number in EngineInfo.h"
+        VERBATIM
+)
+
+function(get_build_number)
+    if(EXISTS "${ENGINE_INFO_FILE}")
+        file(READ "${ENGINE_INFO_FILE}" ENGINE_INFO_CONTENT)
+        string(REGEX MATCH "#define ENGINE_BUILD_NUMBER ([0-9]+)" _match "${ENGINE_INFO_CONTENT}")
+        if(_match)
+            string(REGEX REPLACE ".*#define ENGINE_BUILD_NUMBER ([0-9]+).*" "\\1" ENGINE_BUILD_NUMBER "${ENGINE_INFO_CONTENT}")
+        else()
+            set(ENGINE_BUILD_NUMBER 0 PARENT_SCOPE)
+        endif()
+    else()
+        set(ENGINE_BUILD_NUMBER 0 PARENT_SCOPE)
+    endif()
+    set(ENGINE_BUILD_NUMBER ${ENGINE_BUILD_NUMBER} PARENT_SCOPE)
+endfunction()
+
+get_build_number()
+
 string(TIMESTAMP ENGINE_BUILD_DATE "%Y-%m-%d %H:%M:%S")
-
-set(ENGINE_BUILD_NUMBER_FILE "${CMAKE_CURRENT_SOURCE_DIR}/build_number.txt")
-if(EXISTS ${ENGINE_BUILD_NUMBER_FILE})
-    file(READ ${ENGINE_BUILD_NUMBER_FILE} ENGINE_BUILD_NUMBER)
-    string(STRIP ${ENGINE_BUILD_NUMBER} ENGINE_BUILD_NUMBER)
-else()
-    set(ENGINE_BUILD_NUMBER 0)
-endif()
-math(EXPR ENGINE_BUILD_NUMBER "${ENGINE_BUILD_NUMBER} + 1")
-
-file(WRITE ${ENGINE_BUILD_NUMBER_FILE} "${ENGINE_BUILD_NUMBER}")
-
-
 
 if(WIN32)
     add_compile_definitions(PLATFORM_WINDOWS)
@@ -29,10 +47,8 @@ elseif(UNIX)
     add_compile_definitions(PLATFORM_LINUX)
 endif()
 
-
 set(RESOURCES_SRC "${CMAKE_CURRENT_SOURCE_DIR}/Resources")
 set(RESOURCES_DST "${CMAKE_BINARY_DIR}/$<CONFIG>/Content")
-
 
 set(LIBS_SRC "${CMAKE_CURRENT_SOURCE_DIR}/runtime_libs")
 set(LIBS_DST "${CMAKE_BINARY_DIR}/$<CONFIG>/Engine")
@@ -48,7 +64,6 @@ find_package(Vulkan REQUIRED COMPONENTS glslang SPIRV-Tools)
 
 add_library(stb INTERFACE)
 target_include_directories(stb INTERFACE libs/stb)
-
 
 file(GLOB IMGUI_SOURCES
         libs/imgui/*.cpp
@@ -66,7 +81,6 @@ target_include_directories(imgui PUBLIC
 
 target_link_libraries(imgui PUBLIC Vulkan::Vulkan)
 
-
 file(GLOB_RECURSE ENGINE_SRC
         Application/*.cpp
         Core/*.cpp
@@ -82,7 +96,7 @@ file(GLOB_RECURSE ENGINE_HDR
         Platform/**/*.h
 )
 
-add_library(VoxCore SHARED ${ENGINE_SRC} ${ENGINE_HDR})
+add_library(VoxCore SHARED ${ENGINE_SRC} ${ENGINE_HDR} ${CMAKE_CURRENT_BINARY_DIR}/build_number_trigger)
 
 target_include_directories(VoxCore PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
@@ -92,7 +106,6 @@ target_include_directories(VoxCore PUBLIC
         ${Vulkan_INCLUDE_DIRS}
         "$ENV{VULKAN_SDK}/Include"
         libs/pugixml/src
-
 )
 
 target_link_libraries(VoxCore PRIVATE
@@ -103,7 +116,6 @@ target_link_libraries(VoxCore PRIVATE
         nlohmann_json::nlohmann_json
 )
 
-
 if(WIN32)
     target_link_libraries(VoxCore PRIVATE "$ENV{VULKAN_SDK}/Lib/shaderc_shared.lib")
 elseif(UNIX)
@@ -112,16 +124,6 @@ elseif(UNIX)
 endif()
 
 target_compile_definitions(VoxCore PRIVATE VOXCORE_BUILD_DLL)
-target_compile_definitions(VoxCore PUBLIC
-        ENGINE_VERSION_MAJOR=${ENGINE_VERSION_MAJOR}
-        ENGINE_VERSION_MINOR=${ENGINE_VERSION_MINOR}
-        ENGINE_VERSION_PATCH=${ENGINE_VERSION_PATCH}
-        ENGINE_BUILD_NUMBER=${ENGINE_BUILD_NUMBER}
-        ENGINE_BUILD_DATE="${ENGINE_BUILD_DATE}"
-        ENGINE_BUILD_TYPE="${CMAKE_BUILD_TYPE}"
-        ENGINE_VERSION_STR="${ENGINE_VERSION_MAJOR}.${ENGINE_VERSION_MINOR}.${ENGINE_VERSION_PATCH}"
-        ENGINE_VERSION_FULL_STR="${ENGINE_VERSION_MAJOR}.${ENGINE_VERSION_MINOR}.${ENGINE_VERSION_PATCH}.${ENGINE_BUILD_NUMBER}"
-)
 
 set_target_properties(VoxCore PROPERTIES
         PREFIX ""
@@ -129,7 +131,6 @@ set_target_properties(VoxCore PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIG>/Engine"
         LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIG>/Engine"
 )
-
 
 add_custom_command(TARGET VoxCore POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory "${RESOURCES_DST}"

@@ -56,11 +56,6 @@ VulkanRenderer::VulkanRenderer()
 
 	m_context->commandSystem   = std::make_unique<VulkanCommandSystem>(m_context.get());
 
-	if (!m_shaderPak.Open(Engine::FileSystem::GetWorkingDirectory() + "Content/Paks/VulkanShaders.voxpak"))
-	{
-		LOG_FATAL("Vulkan", "Failed to open VulkanShaders.voxpak");
-	}
-
 	m_cameraUBO = std::make_unique<VulkanCameraUBO>(m_context.get());
 	m_lightUBO = std::make_unique<VulkanLightUBO>(m_context.get());
 	m_renderObjectManager = std::make_unique<VulkanResourceManager>(m_context.get());
@@ -89,7 +84,7 @@ bool VulkanRenderer::Init(IWindow *window, UWorld* world) {
 		return false;
 	}
 	vulkanShader = new VulkanShader(m_context->logicalDevice.get());
-	vulkanShader->LoadFromSource(m_shaderPak.ReadFileWithOverrideString("SimpleRectangle.shader"));
+	vulkanShader->LoadFromSource( Engine::GetCurrentContext().GetPak("Shaders")->ReadFileWithOverrideString("SimpleRectangle.shader"));
 
 	m_window = window;
 

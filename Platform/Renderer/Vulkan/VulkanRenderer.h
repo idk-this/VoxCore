@@ -57,7 +57,6 @@ private:
     std::unordered_map<UMeshComponent*, std::shared_ptr<VulkanRenderObject>> m_meshDataMap2;
     bool InitImGuiForVulkan(IWindow* window);
     IWindow* m_window;
-    VoxPak m_shaderPak;
     std::unique_ptr<VulkanLightUBO> m_lightUBO;
     vk::DescriptorSetLayout m_lightLayout;
 
