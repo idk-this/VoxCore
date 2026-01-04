@@ -19,3 +19,4 @@
 [submodule "libs/json"]
 	path = libs/json
 	url = https://github.com/nlohmann/json
+	branch = master
